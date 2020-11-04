@@ -8,7 +8,7 @@
 import json,datetime,requests # import libraries
 
 # Tibber
-token = ""
+token = "" # insert your token between ""
 
 # InfluxDB variables
 database = "Tibber"
