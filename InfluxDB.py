@@ -4,6 +4,7 @@
 # Version 1.0
 # Script to fetch hourly prices from Tibber, create a file to be used to store the data into InfluxDB
 # Run "influx -import -path=input.txt -precision=s" to store data from file to your InfluxDB
+# You can then add a job to Crontab, so this script is running 2-3 times per day and also the command to import the data to InfluxDB
 
 import json,datetime,requests # import libraries
 
