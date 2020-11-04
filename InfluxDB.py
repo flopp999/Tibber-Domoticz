@@ -7,13 +7,16 @@
 
 import json,datetime,requests # import libraries
 
+# Tibber
+token = ""
+
 # InfluxDB variables
 database = "Tibber"
 measurement = "El"
 field = "Pris"
 
 headers = {
-    'Authorization': 'Bearer xxxxxxxxx', # replace xxxxxxxxx with your Tibber Token
+    'Authorization': 'Bearer '+token, # Tibber Token
     'Content-Type': 'application/json',
 }
 
