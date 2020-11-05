@@ -3,9 +3,9 @@
 # Author: flopp
 #
 """
-<plugin key="Tibber" name="Tibber API" author="flopp" version="1.0.0" wikilink="https://github.com/flopp999/Tibber/edit/main/Domoticz/plugin.py" externallink="https://www.tibber.com/">
+<plugin key="Tibber" name="Tibber API" author="flopp" version="0.5" wikilink="https://github.com/flopp999/Tibber/tree/main/Domoticz" externallink="https://tibber.com/se/invite/8af85f51">
     <description>
-        <h2>Plugin Title</h2><br/>
+        <h2>Tibbe API is used to fetch hourly prices from Tibber</h2><br/>
         Overview...
         <h3>Features</h3>
         <ul style="list-style-type:square">
@@ -20,7 +20,7 @@
         Configuration options...
     </description>
     <params>
-        <param field="Mode3" label="Tibber token" width="200px" required="true"/>
+        <param field="Mode1" label="Tibber token" width="350px" required="true"/>
         <param field="Mode6" label="Debug" width="100px">
             <options>
                 <option label="True" value="Debug"/>
@@ -32,37 +32,39 @@
 </plugin>
 """
 import Domoticz
+import requests
+import json
+from datetime import datetime
 
 class BasePlugin:
     enabled = False
     def __init__(self):
-        #self.var = 123
         return
 
     def onStart(self):
-        Domoticz.Log("onStart called")
-#        Domoticz.Device(Name="Barometer", Unit=4, TypeName="Barometer", Used=1).Create()
+        if (len(Devices) == 0):
+            Domoticz.Device(Name="Price", Unit=1, TypeName="Custom", Used=1).Create()
+
+        #check internet
+        #check webpage
+        #check length token
 
     def onStop(self):
         Domoticz.Log("onStop called")
 
-    def onConnect(self, Connection, Status, Description):
-        Domoticz.Log("onConnect called")
-
-    def onMessage(self, Connection, Data):
-        Domoticz.Log("onMessage called")
-
-    def onCommand(self, Unit, Command, Level, Hue):
-        Domoticz.Log("onCommand called for Unit " + str(Unit) + ": Parameter '" + str(Command) + "', Level: " + str(Level))
-
-    def onNotification(self, Name, Subject, Text, Status, Priority, Sound, ImageFile):
-        Domoticz.Log("Notification: " + Name + "," + Subject + "," + Text + "," + Status + "," + str(Priority) + "," + Sound + "," + ImageFile)
-
-    def onDisconnect(self, Connection):
-        Domoticz.Log("onDisconnect called")
-
     def onHeartbeat(self):
-        Domoticz.Log("onHeartbeat called")
+        timenow = (datetime.now().minute)
+        if timenow == 0:
+            data = '{ "query": "{viewer {homes {currentSubscription {priceInfo {current {total }}}}}}" }' # asking for today's and tomorrow's hourly prices
+            headers = {
+            'Authorization': 'Bearer '+Parameters["Mode1"], # Tibber Token
+            'Content-Type': 'application/json',
+            }
+            response = requests.post('https://api.tibber.com/v1-beta/gql', headers=headers, data=data) # make the query to Tibber
+            response_json = response.json()
+            CurrentPrice = response_json["data"]["viewer"]["homes"][0]["currentSubscription"]["priceInfo"]["current"]["total"]
+            Devices[1].Update(0,str(CurrentPrice))
+            Domoticz.Log("Price updated")
 
 global _plugin
 _plugin = BasePlugin()
@@ -74,26 +76,6 @@ def onStart():
 def onStop():
     global _plugin
     _plugin.onStop()
-
-def onConnect(Connection, Status, Description):
-    global _plugin
-    _plugin.onConnect(Connection, Status, Description)
-
-def onMessage(Connection, Data):
-    global _plugin
-    _plugin.onMessage(Connection, Data)
-
-def onCommand(Unit, Command, Level, Hue):
-    global _plugin
-    _plugin.onCommand(Unit, Command, Level, Hue)
-
-def onNotification(Name, Subject, Text, Status, Priority, Sound, ImageFile):
-    global _plugin
-    _plugin.onNotification(Name, Subject, Text, Status, Priority, Sound, ImageFile)
-
-def onDisconnect(Connection):
-    global _plugin
-    _plugin.onDisconnect(Connection)
 
 def onHeartbeat():
     global _plugin
@@ -113,3 +95,4 @@ def DumpConfigToLog():
         Domoticz.Debug("Device sValue:   '" + Devices[x].sValue + "'")
         Domoticz.Debug("Device LastLevel: " + str(Devices[x].LastLevel))
     return
+debian@NUC:~/domotic
