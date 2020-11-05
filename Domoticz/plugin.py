@@ -20,7 +20,7 @@
         Configuration options...
     </description>
     <params>
-        <param field="Mode1" label="Tibber token" width="350px" required="true"/>
+        <param field="Mode1" label="Tibber token" width="350px" required="true" default="d1007ead2dc84a2b82f0de19451c5fb22112f7ae11d19bf2bedb224a003ff74a" />
         <param field="Mode6" label="Debug" width="100px">
             <options>
                 <option label="True" value="Debug"/>
