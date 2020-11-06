@@ -31,7 +31,7 @@
                 <option label="kr" value="kr" default="true" />
             </options>
         </param>
-        <param field="Mode3" label="Data to fecth" width="100px">
+        <param field="Mode3" label="Data to fetch" width="100px">
             <options>
                 <option label="Current price" value="3" default="true" />
             </options>
