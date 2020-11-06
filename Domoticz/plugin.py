@@ -3,29 +3,37 @@
 # Author: flopp
 #
 """
-<plugin key="Tibber" name="Tibber API" author="flopp" version="0.5" wikilink="https://github.com/flopp999/Tibber/tree/main/Domoticz" externallink="https://tibber.com/se/invite/8af85f51">
+<plugin key="Tibber" name="Tibber API" author="flopp" version="0.6" wikilink="https://github.com/flopp999/Tibber/tree/main/Domoticz" externallink="https://tibber.com/se/invite/8af85f51">
     <description>
-        <h2>Tibbe API is used to fetch hourly prices from Tibber</h2><br/>
-        Overview...
+        <h2>Tibber API is used to fetch data from Tibber.com</h2><br/>
         <h3>Features</h3>
         <ul style="list-style-type:square">
-            <li>Feature one...</li>
-            <li>Feature two...</li>
+            <li>Fetch current price</li>
+            <li>coming: fetch comsumption</li>
         </ul>
         <h3>Devices</h3>
         <ul style="list-style-type:square">
-            <li>Device Type - What it does...</li>
+            <li>Creates a Custom Sensor with name "xxxxx - Price" and with a unique Tibber icon</li>
         </ul>
+        <h3>How to get your personal Tibber Access Token?</h3>
+        <ul style="list-style-type:square">
+            <li>Login to this page to create your personal token <a href="https://developer.tibber.com">https://developer.tibber.com</a></li>
+            <li>Copy your Tibber Access Token to the field below</li>
+        </ul>
+
         <h3>Configuration</h3>
-        Configuration options...
     </description>
     <params>
-        <param field="Mode1" label="Tibber token" width="350px" required="true" default="d1007ead2dc84a2b82f0de19451c5fb22112f7ae11d19bf2bedb224a003ff74a" />
-        <param field="Mode6" label="Debug" width="100px">
+        <param field="Mode1" label="Tibber Access Token" width="460px" required="true" default="d1007ead2dc84a2b82f0de19451c5fb22112f7ae11d19bf2bedb224a003ff74a"/>
+        <param field="Mode2" label="Unit" width="100px">
             <options>
-                <option label="True" value="Debug"/>
-                <option label="False" value="Normal" default="true" />
-                <option label="Logging" value="File"/>
+                <option label="öre" value="öre"/>
+                <option label="kr" value="kr" default="true" />
+            </options>
+        </param>
+        <param field="Mode3" label="Data to fecth" width="100px">
+            <options>
+                <option label="Current price" value="3" default="true" />
             </options>
         </param>
     </params>
@@ -43,8 +51,7 @@ class BasePlugin:
 
     def onStart(self):
         if (len(Devices) == 0):
-            Domoticz.Device(Name="Price", Unit=1, TypeName="Custom", Used=1).Create()
-
+            Domoticz.Device(Name="Price", Unit=1, TypeName="Custom", Used=1, Image=106, Options={"Custom": "1;"+Parameters["Mode2"]}).Create()
         #check internet
         #check webpage
         #check length token
@@ -54,8 +61,13 @@ class BasePlugin:
 
     def onHeartbeat(self):
         timenow = (datetime.now().minute)
-        if timenow == 0:
-            data = '{ "query": "{viewer {homes {currentSubscription {priceInfo {current {total }}}}}}" }' # asking for today's and tomorrow's hourly prices
+        if timenow != 50:
+#            if Parameters["Mode3"] == 1:
+#                data = '{ "query": "{viewer {homes {currentSubscription {priceInfo {current {total }}}}}}" }' # asking for today's and tomorrow's hourly prices
+#            if Parameters["Mode3"] == 2:
+#                data = '{ "query": "{viewer {homes {currentSubscription {priceInfo {current {total }}}}}}" }' # asking for today's and tomorrow's hourly prices
+            if Parameters["Mode3"] == 3:
+                data = '{ "query": "{viewer {homes {currentSubscription {priceInfo {current {total }}}}}}" }' # asking for today's and tomorrow's hourly prices
             headers = {
             'Authorization': 'Bearer '+Parameters["Mode1"], # Tibber Token
             'Content-Type': 'application/json',
@@ -63,6 +75,8 @@ class BasePlugin:
             response = requests.post('https://api.tibber.com/v1-beta/gql', headers=headers, data=data) # make the query to Tibber
             response_json = response.json()
             CurrentPrice = response_json["data"]["viewer"]["homes"][0]["currentSubscription"]["priceInfo"]["current"]["total"]
+            if Parameters["Mode2"] == "öre":
+                CurrentPrice = CurrentPrice * 100
             Devices[1].Update(0,str(CurrentPrice))
             Domoticz.Log("Price updated")
 
@@ -95,4 +109,3 @@ def DumpConfigToLog():
         Domoticz.Debug("Device sValue:   '" + Devices[x].sValue + "'")
         Domoticz.Debug("Device LastLevel: " + str(Devices[x].LastLevel))
     return
-debian@NUC:~/domotic
