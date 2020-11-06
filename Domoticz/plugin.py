@@ -61,7 +61,7 @@ class BasePlugin:
 
     def onHeartbeat(self):
         timenow = (datetime.now().minute)
-        if timenow != 50:
+        if timenow == 0:
 #            if Parameters["Mode3"] == 1:
 #                data = '{ "query": "{viewer {homes {currentSubscription {priceInfo {current {total }}}}}}" }' # asking for today's and tomorrow's hourly prices
 #            if Parameters["Mode3"] == 2:
