@@ -9,7 +9,7 @@
         <h3>Features</h3>
         <ul style="list-style-type:square">
             <li>Fetch current price</li>
-            <li>coming: fetch comsumption</li>
+            <li>coming: fetch consumption</li>
         </ul>
         <h3>Devices</h3>
         <ul style="list-style-type:square">
@@ -17,8 +17,9 @@
         </ul>
         <h3>How to get your personal Tibber Access Token?</h3>
         <ul style="list-style-type:square">
-            <li>Login to this page to create your personal token <a href="https://developer.tibber.com">https://developer.tibber.com</a></li>
+            <li>Login to this page to create your personal token<a href="https://developer.tibber.com"> https://developer.tibber.com</a></li>
             <li>Copy your Tibber Access Token to the field below</li>
+            <li>Default Tibber Access Token is a demo copied from https://developer.tibber.com</li>
         </ul>
 
         <h3>Configuration</h3>
