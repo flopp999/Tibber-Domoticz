@@ -8,7 +8,7 @@
         <h2>Tibber API is used to fetch data from Tibber.com</h2><br/>
         <h3>Features</h3>
         <ul style="list-style-type:square">
-            <li>Fetch current price</li>
+            <li>Fetch current price, every hour at minute 0</li>
             <li>coming: fetch consumption</li>
         </ul>
         <h3>Devices</h3>
