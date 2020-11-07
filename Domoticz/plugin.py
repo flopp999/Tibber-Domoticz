@@ -64,7 +64,7 @@ class BasePlugin:
 
     def onHeartbeat(self):
         timenow = (datetime.now().minute)
-        if timenow != 0:
+        if timenow == 0:
             self.Update()
 
     def Update(self):
