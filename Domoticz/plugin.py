@@ -3,7 +3,7 @@
 # Author: flopp
 #
 """
-<plugin key="Tibber" name="Tibber API" author="flopp" version="0.62" wikilink="https://github.com/flopp999/Tibber/tree/main/Domoticz" externallink="https://tibber.com/se/invite/8af85f51">
+<plugin key="Tibber" name="Tibber API" author="flopp" version="0.61" wikilink="https://github.com/flopp999/Tibber/tree/main/Domoticz" externallink="https://tibber.com/se/invite/8af85f51">
     <description>
         <h2>Tibber API is used to fetch data from Tibber.com</h2><br/>
         <h3>Features</h3>
@@ -14,16 +14,15 @@
         <h3>Devices</h3>
         <ul style="list-style-type:square">
             <li>Creates a Custom Sensor with name "xxxxx - Price" and with a unique Tibber icon</li>
-            <li>Select which unit you want, "kr" or "öre"</li>
+            <li>Select which unit you want use, "kr" or "öre"</li>
             <li>Select what data to fetch, Current price (coming later and/or Consumption)</li>
         </ul>
         <h3>How to get your personal Tibber Access Token?</h3>
         <ul style="list-style-type:square">
-            <li>Login to this page to create your personal token<a href="https://developer.tibber.com"> https://developer.tibber.com</a></li>
+            <li>Login to this page to create your personal token &<a href="https://developer.tibber.com">https://developer.tibber.com</a></li>
             <li>Copy your Tibber Access Token to the field below</li>
-            <li>Default Tibber Access Token is a demo copied from https://developer.tibber.com</li>
         </ul>
-
+        <h4>Default Tibber Access Token is a demo copied from &<a href="https://developer.tibber.com/explorer">https://developer.tibber.com/explorer</a></h4><br/>
         <h3>Configuration</h3>
     </description>
     <params>
@@ -74,7 +73,6 @@ class BasePlugin:
 #        if Parameters["Mode3"] == 2:
 #            data = '{ "query": "{viewer {homes {currentSubscription {priceInfo {current {total }}}}}}" }' # asking for today's and tomorrow's hourly prices
         if (Parameters["Mode3"] == "3"):
-            Domoticz.Log(Parameters["Mode3"])
             data = '{ "query": "{viewer {homes {currentSubscription {priceInfo {current {total }}}}}}" }' # asking for today's and tomorrow's hourly prices
         headers = {
         'Authorization': 'Bearer '+Parameters["Mode1"], # Tibber Token
