@@ -14,8 +14,8 @@
         <h3>Devices</h3>
         <ul style="list-style-type:square">
             <li>Creates a Custom Sensor with name "xxxxx - Price" and with a unique Tibber icon</li>
-            <li>Select which unit you want, "kr" or "öre"
-            <li>Select what data to fetch, Current price (coming later and/or Consumption)
+            <li>Select which unit you want, "kr" or "öre"</li>
+            <li>Select what data to fetch, Current price (coming later and/or Consumption)</li>
         </ul>
         <h3>How to get your personal Tibber Access Token?</h3>
         <ul style="list-style-type:square">
