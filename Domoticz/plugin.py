@@ -3,7 +3,7 @@
 # Author: flopp
 #
 """
-<plugin key="Tibber" name="Tibber API" author="flopp" version="0.63" wikilink="https://github.com/flopp999/Tibber/tree/main/Domoticz" externallink="https://tibber.com/se/invite/8af85f51">
+<plugin key="Tibber" name="Tibber API" author="flopp" version="0.64" wikilink="https://github.com/flopp999/Tibber/tree/main/Domoticz" externallink="https://tibber.com/se/invite/8af85f51">
     <description>
         <h2>Tibber API is used to fetch data from Tibber.com</h2><br/>
         <h3>Features</h3>
@@ -54,8 +54,10 @@ class BasePlugin:
     def onStart(self):
         if (len(Devices) == 0):
             Domoticz.Device(Name="Price", Unit=1, TypeName="Custom", Used=1, Image=106, Options={"Custom": "1;"+Parameters["Mode2"]}).Create()
+        self.Updated = 0
+        Domoticz.Log("Tibber API started")
         self.Update()
-        #check internet
+
         #check webpage
         #check length token
 
@@ -64,34 +66,53 @@ class BasePlugin:
 
     def onHeartbeat(self):
         timenow = (datetime.now().minute)
-        if timenow == 0:
+        if timenow > 1 and self.Updated == 1:
+            self.Updated = 0
+        if timenow == 0 and self.Updated == 0:
+            Domoticz.Log(str(self.Updated))
             self.Update()
 
     def Update(self):
+        if CheckInternet() == True:
 #        if Parameters["Mode3"] == 1:
 #            data = '{ "query": "{viewer {homes {currentSubscription {priceInfo {current {total }}}}}}" }' # asking for today's and tomorrow's hourly prices
 #        if Parameters["Mode3"] == 2:
 #            data = '{ "query": "{viewer {homes {currentSubscription {priceInfo {current {total }}}}}}" }' # asking for today's and tomorrow's hourly prices
-        if (Parameters["Mode3"] == "3"):
-            data = '{ "query": "{viewer {homes {currentSubscription {priceInfo {current {total }}}}}}" }' # asking for today's and tomorrow's hourly prices
-        headers = {
-        'Authorization': 'Bearer '+Parameters["Mode1"], # Tibber Token
-        'Content-Type': 'application/json',
-        }
-        response = requests.post('https://api.tibber.com/v1-beta/gql', headers=headers, data=data) # make the query to Tibber
-        response_json = response.json()
-        CurrentPrice = response_json["data"]["viewer"]["homes"][0]["currentSubscription"]["priceInfo"]["current"]["total"]
-        if Parameters["Mode2"] == "öre":
-            CurrentPrice = CurrentPrice * 100
-        Devices[1].Update(0,str(CurrentPrice))
-        Domoticz.Log("Price updated")
+            if (Parameters["Mode3"] == "3"):
+                data = '{ "query": "{viewer {homes {currentSubscription {priceInfo {current {total }}}}}}" }' # asking for today's and tomorrow's hourly prices
+            headers = {
+            'Authorization': 'Bearer '+Parameters["Mode1"], # Tibber Token
+            'Content-Type': 'application/json',
+            }
+            response = requests.post('https://api.tibber.com/v1-beta/gql', headers=headers, data=data) # make the query to Tibber
+            if response.status_code == 200:
+                response_json = response.json()
+                CurrentPrice = response_json["data"]["viewer"]["homes"][0]["currentSubscription"]["priceInfo"]["current"]["total"]
+                if Parameters["Mode2"] == "öre":
+                    CurrentPrice = CurrentPrice * 100
+                Devices[1].Update(0,str(CurrentPrice))
+                self.Updated = 1
+                Domoticz.Log(str(self.Updated))
+                Domoticz.Log("Price updated")
 
 global _plugin
 _plugin = BasePlugin()
 
+
 def onStart():
     global _plugin
+    while CheckInternet() == False:
+        time.sleep(100)
     _plugin.onStart()
+
+def CheckInternet():
+    try:
+        requests.get(url='http://www.google.com/', timeout=5)
+        Domoticz.Log("internet OK")
+        return True
+    except requests.ConnectionError:
+        Domoticz.Log("internet finns inte")
+        return False
 
 def onStop():
     global _plugin
