@@ -3,7 +3,7 @@
 # Author: flopp
 #
 """
-<plugin key="Tibber" name="Tibber API" author="flopp" version="0.64" wikilink="https://github.com/flopp999/Tibber/tree/main/Domoticz" externallink="https://tibber.com/se/invite/8af85f51">
+<plugin key="Tibber" name="Tibber API" author="flopp" version="0.65" wikilink="https://github.com/flopp999/Tibber/tree/main/Domoticz" externallink="https://tibber.com/se/invite/8af85f51">
     <description>
         <h2>Tibber API is used to fetch data from Tibber.com</h2><br/>
         <h3>Features</h3>
@@ -102,7 +102,7 @@ _plugin = BasePlugin()
 def onStart():
     global _plugin
     while CheckInternet() == False:
-        time.sleep(100)
+        time.sleep(10)
     _plugin.onStart()
 
 def CheckInternet():
