@@ -69,7 +69,6 @@ class BasePlugin:
         if timenow > 1 and self.Updated == 1:
             self.Updated = 0
         if timenow == 0 and self.Updated == 0:
-            Domoticz.Log(str(self.Updated))
             self.Update()
 
     def Update(self):
@@ -92,7 +91,6 @@ class BasePlugin:
                     CurrentPrice = CurrentPrice * 100
                 Devices[1].Update(0,str(CurrentPrice))
                 self.Updated = 1
-                Domoticz.Log(str(self.Updated))
                 Domoticz.Log("Price updated")
 
 global _plugin
@@ -108,10 +106,10 @@ def onStart():
 def CheckInternet():
     try:
         requests.get(url='http://www.google.com/', timeout=5)
-        Domoticz.Log("internet OK")
+        Domoticz.Log("Internet OK")
         return True
     except requests.ConnectionError:
-        Domoticz.Log("internet finns inte")
+        Domoticz.Log("No internet connection")
         return False
 
 def onStop():
