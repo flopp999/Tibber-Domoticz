@@ -5,4 +5,4 @@ Add Tibber from Hardware
 Input your Token
 
 
-![](https://github.com/flopp999/Tibber/blob/main/Domoticz/tibber.png "Photo")
+![](./tibber.png "Photo")
