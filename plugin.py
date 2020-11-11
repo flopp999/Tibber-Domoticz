@@ -3,7 +3,7 @@
 # Author: flopp
 #
 """
-<plugin key="Tibber" name="Tibber API" author="flopp" version="0.70" wikilink="https://github.com/flopp999/Tibber/tree/main/Domoticz" externallink="https://tibber.com/se/invite/8af85f51">
+<plugin key="Tibber" name="Tibber API" author="flopp" version="0.71" wikilink="https://github.com/flopp999/Tibber/tree/main/Domoticz" externallink="https://tibber.com/se/invite/8af85f51">
     <description>
         <h2>Tibber API is used to fetch data from Tibber.com</h2><br/>
         <h3>Features</h3>
@@ -54,8 +54,8 @@ class BasePlugin:
 
     def onStart(self):
         if (len(Devices) == 1):
-            Domoticz.Device(Name="Current Price", Unit=1, TypeName="Custom", Used=1, Image=106, Options={"Custom": "1;"+Parameters["Mode2"]}).Create()
-            Domoticz.Device(Name="Mean Price", Unit=2, TypeName="Custom", Used=1, Image=106, Options={"Custom": "1;"+Parameters["Mode2"]}).Create()
+            Domoticz.Device(Name="Current Price", Unit=1, TypeName="Custom", Used=1, Options={"Custom": "1;"+Parameters["Mode2"]}).Create()
+            Domoticz.Device(Name="Mean Price", Unit=2, TypeName="Custom", Used=1, Options={"Custom": "1;"+Parameters["Mode2"]}).Create()
         self.CurrentPriceUpdated = False
         self.MeanPriceUpdated = False
         self.UpdateCurrentPrice()
