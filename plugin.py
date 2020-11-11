@@ -1,46 +1,3 @@
-# Tibber Python Plugin
-#
-# Author: flopp
-#
-"""
-<plugin key="Tibber" name="Tibber API" author="flopp" version="0.72" wikilink="https://github.com/flopp999/Tibber/tree/main/Domoticz" externallink="https://tibber.com/se/invite/8af85f51">
-    <description>
-        <h2>Tibber API is used to fetch data from Tibber.com</h2><br/>
-        <h3>Features</h3>
-        <ul style="list-style-type:square">
-            <li>Fetch current price, every hour at minute 0</li>
-            <li>Fetch today's mean price, every hour at minute 0</li>
-            <li>coming: fetch consumption</li>
-        </ul>
-        <h3>Devices</h3>
-        <ul style="list-style-type:square">
-            <li>Creates a Custom Sensor with name "xxxxx - Price" and with a unique Tibber icon</li>
-            <li>Select which unit you want use, "kr" or "öre"</li>
-            <li>Select what data to fetch, Current price (coming later and/or Consumption)</li>
-        </ul>
-        <h3>How to get your personal Tibber Access Token?</h3>
-        <ul style="list-style-type:square">
-            <li>Login to this page to create your personal token &<a href="https://developer.tibber.com">https://developer.tibber.com</a></li>
-            <li>Copy your Tibber Access Token to the field below</li>
-        </ul>
-        <h4>Default Tibber Access Token is a demo copied from &<a href="https://developer.tibber.com/explorer">https://developer.tibber.com/explorer</a></h4><br/>
-        <h3>Configuration</h3>
-    </description>
-    <params>
-        <param field="Mode1" label="Tibber Access Token" width="460px" required="true" default="d1007ead2dc84a2b82f0de19451c5fb22112f7ae11d19bf2bedb224a003ff74a"/>
-        <param field="Mode2" label="Unit" width="100px">
-            <options>
-                <option label="öre" value="öre"/>
-                <option label="kr" value="kr" default="true" />
-            </options>
-        </param>
-        <param field="Mode3" label="Data to fetch" width="100px">
-            <options>
-                <option label="Current price" value="3" default="true" />
-            </options>
-        </param>
-    </params>
-</plugin>
 """
 import Domoticz
 import requests
@@ -53,9 +10,11 @@ class BasePlugin:
         return
 
     def onStart(self):
-        if (len(Devices) < 2):
-            Domoticz.Device(Name="Current Price", Unit=1, TypeName="Custom", Used=1, Options={"Custom": "1;"+Parameters["Mode2"]}).Create()
-            Domoticz.Device(Name="Mean Price", Unit=2, TypeName="Custom", Used=1, Options={"Custom": "1;"+Parameters["Mode2"]}).Create()
+        if ('Tibber'  not in Images): Domoticz.Image('Tibber.zip').Create()
+        ImageID = Images["tibberprice"].ID
+        if (len(Devices) == 1):
+            Domoticz.Device(Name="Current Price", Unit=1, TypeName="Custom", Used=1, Image=ImageID, Options={"Custom": "1;"+Parameters["Mode2"]}).Create()
+            Domoticz.Device(Name="Mean Price", Unit=2, TypeName="Custom", Used=1, Image=ImageID, Options={"Custom": "1;"+Parameters["Mode2"]}).Create()
         self.CurrentPriceUpdated = False
         self.MeanPriceUpdated = False
         self.UpdateCurrentPrice()
@@ -66,10 +25,10 @@ class BasePlugin:
 
     def onHeartbeat(self):
         MinuteNow = (datetime.now().minute)
-        if MinuteNow > 1 and self.CurrentPriceUpdated == True:
+        if MinuteNow > 2 and self.CurrentPriceUpdated == True:
             self.CurrentPriceUpdated = False
             self.MeanPriceUpdated = False
-        if MinuteNow == 0 and self.CurrentPriceUpdated == False:
+        if MinuteNow == 2 and self.CurrentPriceUpdated == False:
             self.UpdateCurrentPrice()
             self.UpdateMeanPrice()
 
