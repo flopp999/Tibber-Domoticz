@@ -58,7 +58,6 @@ class BasePlugin:
             Domoticz.Device(Name="Mean Price", Unit=2, TypeName="Custom", Used=1, Image=106, Options={"Custom": "1;"+Parameters["Mode2"]}).Create()
         self.CurrentPriceUpdated = False
         self.MeanPriceUpdated = False
-        writefile("start")
         self.UpdateCurrentPrice()
         self.UpdateMeanPrice()
 
@@ -95,7 +94,6 @@ class BasePlugin:
                 Devices[1].Update(0,str(CurrentPrice))
                 self.CurrentPriceUpdated = True
                 Domoticz.Log("Current Price updated")
-                writefile("Current Price updated")
 
     def UpdateMeanPrice(self):
         if CheckInternet() == True:
@@ -116,7 +114,6 @@ class BasePlugin:
                 Devices[2].Update(0,str(MeanPrice))
                 self.MeanPriceUpdated = True
                 Domoticz.Log("Mean Price Updated")
-                writefile("MeanPrice Updated")
 
 global _plugin
 _plugin = BasePlugin()
@@ -128,17 +125,9 @@ def onStart():
 def CheckInternet():
     try:
         requests.get(url='http://www.google.com/', timeout=5)
-        writefile("Internet OK")
         return True
     except requests.ConnectionError:
-        writefile("No internet connection")
         return False
-
-def writefile(text):
-    timenow = (datetime.now())
-    file = open("plugins/tibber/tibber.txt","a+")
-    file.write(str(timenow)+" "+text+"\n")
-    file.close()
 
 def onHeartbeat():
     global _plugin
