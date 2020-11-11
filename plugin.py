@@ -53,7 +53,7 @@ class BasePlugin:
         return
 
     def onStart(self):
-        if ('TibberPrice'  not in Images): Domoticz.Image('TibberPrice.zip').Create()
+        if ('TibberPrice'  not in Images): Domoticz.Image('tibberprice.zip').Create()
         ImageID = Images["tibberprice"].ID
         if (len(Devices) < 2):
             Domoticz.Device(Name="Current Price", Unit=1, TypeName="Custom", Used=1, Image=ImageID, Options={"Custom": "1;"+Parameters["Mode2"]}).Create()
