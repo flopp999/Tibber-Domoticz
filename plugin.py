@@ -3,7 +3,7 @@
 # Author: flopp
 #
 """
-<plugin key="Tibber" name="Tibber API" author="flopp" version="0.73" wikilink="https://github.com/flopp999/Tibber/tree/main/Domoticz" externallink="https://tibber.com/se/invite/8af85f51">
+<plugin key="Tibber" name="Tibber API" author="flopp" version="0.78" wikilink="https://github.com/flopp999/Tibber/tree/main/Domoticz" externallink="https://tibber.com/se/invite/8af85f51">
     <description>
         <h2>Tibber API is used to fetch data from Tibber.com</h2><br/>
         <h3>Features</h3>
@@ -43,9 +43,21 @@
 </plugin>
 """
 import Domoticz
-import requests
-import json
-from datetime import datetime
+Package = True
+try:
+    import requests
+except ImportError as e:
+    Package = False
+
+try:
+    import json
+except ImportError as e:
+    Package = False
+
+try:
+    from datetime import datetime
+except ImportError as e:
+    Package = False
 
 class BasePlugin:
     enabled = False
@@ -53,27 +65,31 @@ class BasePlugin:
         return
 
     def onStart(self):
-        if ('TibberPrice'  not in Images): Domoticz.Image('tibberprice.zip').Create()
-        ImageID = Images["tibberprice"].ID
-        if (len(Devices) < 2):
-            Domoticz.Device(Name="Current Price", Unit=1, TypeName="Custom", Used=1, Image=ImageID, Options={"Custom": "1;"+Parameters["Mode2"]}).Create()
-            Domoticz.Device(Name="Mean Price", Unit=2, TypeName="Custom", Used=1, Image=ImageID, Options={"Custom": "1;"+Parameters["Mode2"]}).Create()
-        self.CurrentPriceUpdated = False
-        self.MeanPriceUpdated = False
-        self.UpdateCurrentPrice()
-        self.UpdateMeanPrice()
-
-        #check webpage
-        #check length token
-
-    def onHeartbeat(self):
-        MinuteNow = (datetime.now().minute)
-        if MinuteNow > 2 and self.CurrentPriceUpdated == True:
+        if Package == True:
+            if ('TibberPrice'  not in Images): Domoticz.Image('tibberprice.zip').Create()
+            ImageID = Images["tibberprice"].ID
+            if (len(Devices) < 2):
+                Domoticz.Device(Name="Current Price", Unit=1, TypeName="Custom", Used=1, Image=ImageID, Options={"Custom": "1;"+Parameters["Mode2"]}).Create()
+                Domoticz.Device(Name="Mean Price", Unit=2, TypeName="Custom", Used=1, Image=ImageID, Options={"Custom": "1;"+Parameters["Mode2"]}).Create()
             self.CurrentPriceUpdated = False
             self.MeanPriceUpdated = False
-        if MinuteNow == 2 and self.CurrentPriceUpdated == False:
             self.UpdateCurrentPrice()
             self.UpdateMeanPrice()
+
+            #check webpage
+            #check length token
+        if Package == False:
+            Domoticz.Log("Missing packages")
+
+    def onHeartbeat(self):
+        if Package == True:
+            MinuteNow = (datetime.now().minute)
+            if MinuteNow > 2 and self.CurrentPriceUpdated == True:
+                self.CurrentPriceUpdated = False
+                self.MeanPriceUpdated = False
+            if MinuteNow == 2 and self.CurrentPriceUpdated == False:
+                self.UpdateCurrentPrice()
+                self.UpdateMeanPrice()
 
     def UpdateCurrentPrice(self):
         if CheckInternet() == True:
