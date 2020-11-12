@@ -3,7 +3,7 @@
 # Author: flopp
 #
 """
-<plugin key="Tibber" name="Tibber API" author="flopp" version="0.78" wikilink="https://github.com/flopp999/Tibber/tree/main/Domoticz" externallink="https://tibber.com/se/invite/8af85f51">
+<plugin key="Tibber" name="Tibber API" author="flopp" version="0.79" wikilink="https://github.com/flopp999/Tibber/tree/main/Domoticz" externallink="https://tibber.com/se/invite/8af85f51">
     <description>
         <h2>Tibber API is used to fetch data from Tibber.com</h2><br/>
         <h3>Features</h3>
@@ -84,7 +84,7 @@ class BasePlugin:
     def onHeartbeat(self):
         if Package == True:
             MinuteNow = (datetime.now().minute)
-            if MinuteNow > 2 and self.CurrentPriceUpdated == True:
+            if MinuteNow > 45 and self.CurrentPriceUpdated == True:
                 self.CurrentPriceUpdated = False
                 self.MeanPriceUpdated = False
             if MinuteNow == 2 and self.CurrentPriceUpdated == False:
