@@ -3,7 +3,7 @@
 # Author: flopp
 #
 """
-<plugin key="Tibber" name="Tibber API" author="flopp" version="0.79" wikilink="https://github.com/flopp999/Tibber/tree/main/Domoticz" externallink="https://tibber.com/se/invite/8af85f51">
+<plugin key="Tibber" name="Tibber API" author="flopp" version="0.79" wikilink="https://github.com/flopp999/Tibber-Domoticz" externallink="https://tibber.com/se/invite/8af85f51">
     <description>
         <h2>Tibber API is used to fetch data from Tibber.com</h2><br/>
         <h3>Features</h3>
