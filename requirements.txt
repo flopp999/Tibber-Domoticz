@@ -1,0 +1,2 @@
+DateTime>=4.3
+requests>=2.23.0
