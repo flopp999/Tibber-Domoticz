@@ -3,7 +3,7 @@
 # Author: flopp
 #
 """
-<plugin key="Tibber" name="Tibber API" author="flopp" version="0.79" wikilink="https://github.com/flopp999/Tibber-Domoticz" externallink="https://tibber.com/se/invite/8af85f51">
+<plugin key="Tibber" name="Tibber API Version: 0.80" author="flopp" version="0.80" wikilink="https://github.com/flopp999/Tibber/tree/main/Domoticz" externallink="https://tibber.com/se/invite/8af85f51">
     <description>
         <h2>Tibber API is used to fetch data from Tibber.com</h2><br/>
         <h3>Features</h3>
@@ -50,6 +50,11 @@ except ImportError as e:
     Package = False
 
 try:
+    import os
+except ImportError as e:
+    Package = False
+
+try:
     import json
 except ImportError as e:
     Package = False
@@ -65,6 +70,7 @@ class BasePlugin:
         return
 
     def onStart(self):
+        WriteToFile("onStart")
         if Package == True:
             if ('TibberPrice'  not in Images): Domoticz.Image('tibberprice.zip').Create()
             ImageID = Images["tibberprice"].ID
@@ -82,17 +88,27 @@ class BasePlugin:
             Domoticz.Log("Missing packages")
 
     def onHeartbeat(self):
+        WriteToFile("onHeartbeat")
         if Package == True:
+            WriteToFile("All packages is installed")
             MinuteNow = (datetime.now().minute)
-            if MinuteNow > 45 and self.CurrentPriceUpdated == True:
+            if MinuteNow > 6 and self.CurrentPriceUpdated == True:
+                WriteToFile("Set self.CurrentPriceUpdated = False")
                 self.CurrentPriceUpdated = False
+            if MinuteNow > 31 and self.MeanPriceUpdated == True:
+                WriteToFile("Set self.MeanPriceUpdated = False")
                 self.MeanPriceUpdated = False
-            if MinuteNow == 2 and self.CurrentPriceUpdated == False:
+            if MinuteNow == 5 and self.CurrentPriceUpdated == False:
+                WriteToFile("Update CurrentPrice")
                 self.UpdateCurrentPrice()
+            if MinuteNow == 30 and self.MeanPriceUpdated == False:
+                WriteToFile("Update MeanPrice")
                 self.UpdateMeanPrice()
 
     def UpdateCurrentPrice(self):
+        WriteToFile("Entered UpdateCurrentPrice")
         if CheckInternet() == True:
+            WriteToFile("Internet is OK")
 #        if Parameters["Mode3"] == 1:
 #            data = '{ "query": "{viewer {homes {currentSubscription {priceInfo {current {total }}}}}}" }' # asking for today's and tomorrow's hourly prices
 #        if Parameters["Mode3"] == 2:
@@ -104,24 +120,31 @@ class BasePlugin:
             'Content-Type': 'application/json',
             }
             response = requests.post('https://api.tibber.com/v1-beta/gql', headers=headers, data=data) # make the query to Tibber
+            WriteToFile("Response")
             if response.status_code == 200:
+                WriteToFile("CurrentPriceStatus200")
                 response_json = response.json()
                 CurrentPrice = round(response_json["data"]["viewer"]["homes"][0]["currentSubscription"]["priceInfo"]["current"]["total"],2)
                 if Parameters["Mode2"] == "öre":
                     CurrentPrice = CurrentPrice * 100
                 Devices[1].Update(0,str(CurrentPrice))
                 self.CurrentPriceUpdated = True
+                WriteToFile("Current Price Updated")
                 Domoticz.Log("Current Price updated")
 
     def UpdateMeanPrice(self):
+        WriteToFile("Entered UpdateMeanPrice")
         if CheckInternet() == True:
+            WriteToFile("Internet is OK")
             data = '{ "query": "{viewer {homes {currentSubscription {priceInfo {today {total }}}}}}" }' # asking for today's and tomorrow's hourly prices
             headers = {
             'Authorization': 'Bearer '+Parameters["Mode1"], # Tibber Token
             'Content-Type': 'application/json',
             }
             response = requests.post('https://api.tibber.com/v1-beta/gql', headers=headers, data=data) # make the query to Tibber
+            WriteToFile("Response")
             if response.status_code == 200:
+                WriteToFile("MeanPriceStatus200")
                 response_json = response.json()
                 MeanPrice = float(0)
                 for each in response_json["data"]["viewer"]["homes"][0]["currentSubscription"]["priceInfo"]["today"]:
@@ -131,6 +154,7 @@ class BasePlugin:
                     MeanPrice = MeanPrice * 100
                 Devices[2].Update(0,str(MeanPrice))
                 self.MeanPriceUpdated = True
+                WriteToFile("Mean Price Updated")
                 Domoticz.Log("Mean Price Updated")
 
 global _plugin
@@ -141,11 +165,21 @@ def onStart():
     _plugin.onStart()
 
 def CheckInternet():
+    WriteToFile("Entered CheckInternet")
     try:
+        WriteToFile("Try ping")
         requests.get(url='http://www.google.com/', timeout=5)
+        WriteToFile("Ping done")
         return True
     except requests.ConnectionError:
+        WriteToFile("Internet is not available")
         return False
+
+def WriteToFile(text):
+    timenow = (datetime.now())
+    file = open("plugins/Tibber/Tibber.log","a")
+    file.write(str(timenow)+" "+text+"\n")
+    file.close()
 
 def onHeartbeat():
     global _plugin
