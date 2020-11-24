@@ -67,6 +67,7 @@ except ImportError as e:
 class BasePlugin:
     enabled = False
     def __init__(self):
+        self.Count = 0
         return
 
     def onStart(self):
@@ -89,21 +90,24 @@ class BasePlugin:
 
     def onHeartbeat(self):
         WriteToFile("onHeartbeat")
-        if Package == True:
-            WriteToFile("All packages is installed")
-            MinuteNow = (datetime.now().minute)
-            if MinuteNow > 6 and self.CurrentPriceUpdated == True:
-                WriteToFile("Set self.CurrentPriceUpdated = False")
-                self.CurrentPriceUpdated = False
-            if MinuteNow > 31 and self.MeanPriceUpdated == True:
-                WriteToFile("Set self.MeanPriceUpdated = False")
-                self.MeanPriceUpdated = False
-            if MinuteNow == 5 and self.CurrentPriceUpdated == False:
-                WriteToFile("Update CurrentPrice")
-                self.UpdateCurrentPrice()
-            if MinuteNow == 30 and self.MeanPriceUpdated == False:
-                WriteToFile("Update MeanPrice")
-                self.UpdateMeanPrice()
+        self.Count += 1
+        if self.Count == 6:
+            self.Count = 0
+            if Package == True:
+                WriteToFile("All packages is installed")
+                MinuteNow = (datetime.now().minute)
+                if MinuteNow > 6 and self.CurrentPriceUpdated == True:
+                    WriteToFile("Set self.CurrentPriceUpdated = False")
+                    self.CurrentPriceUpdated = False
+                if MinuteNow > 31 and self.MeanPriceUpdated == True:
+                    WriteToFile("Set self.MeanPriceUpdated = False")
+                    self.MeanPriceUpdated = False
+                if MinuteNow == 5 and self.CurrentPriceUpdated == False:
+                    WriteToFile("Update CurrentPrice")
+                    self.UpdateCurrentPrice()
+                if MinuteNow == 30 and self.MeanPriceUpdated == False:
+                    WriteToFile("Update MeanPrice")
+                    self.UpdateMeanPrice()
 
     def UpdateCurrentPrice(self):
         WriteToFile("Entered UpdateCurrentPrice")
