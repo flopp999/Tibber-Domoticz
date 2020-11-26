@@ -5,7 +5,7 @@ Put plugin.py, tibberprice.zip, requirements.txt in that folder
 
 or
 
-Run "sudo git clone https://github.com/flopp999/Tibber-Domoticz.git Tibber"
+Run in domoticz/plugins "sudo git clone https://github.com/flopp999/Tibber-Domoticz.git Tibber"
 
 -------------------
 
