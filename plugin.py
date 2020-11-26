@@ -11,7 +11,7 @@
             <li>Fetch current price, every hour at minute 5</li>
             <li>Fetch today's mean price, every hour at minute 30</li>
             <li>coming: fetch consumption</li>
-            <li>Debug ti file Tibber.log, in plugins/Tibber/li>
+            <li>Debug ti file Tibber.log, in plugins/Tibber</li>
         </ul>
         <h3>Devices</h3>
         <ul style="list-style-type:square">
