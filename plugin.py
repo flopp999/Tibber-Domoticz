@@ -11,6 +11,7 @@
             <li>Fetch current price, every hour at minute 5</li>
             <li>Fetch today's mean price, every hour at minute 30</li>
             <li>coming: fetch consumption</li>
+            <li>Debug ti file Tibber.log, in plugins/Tibber/li>
         </ul>
         <h3>Devices</h3>
         <ul style="list-style-type:square">
@@ -32,11 +33,6 @@
             <options>
                 <option label="öre" value="öre"/>
                 <option label="kr" value="kr" default="true" />
-            </options>
-        </param>
-        <param field="Mode3" label="Data to fetch" width="100px">
-            <options>
-                <option label="Current price" value="3" default="true" />
             </options>
         </param>
         <param field="Mode6" label="Debug to file (Tibber.log)" width="70px">
@@ -124,11 +120,11 @@ class BasePlugin:
 #            data = '{ "query": "{viewer {homes {currentSubscription {priceInfo {current {total }}}}}}" }' # asking for today's and tomorrow's hourly prices
 #        if Parameters["Mode3"] == 2:
 #            data = '{ "query": "{viewer {homes {currentSubscription {priceInfo {current {total }}}}}}" }' # asking for today's and tomorrow's hourly prices
-            if (Parameters["Mode3"] == "3"):
-                data = '{ "query": "{viewer {homes {currentSubscription {priceInfo {current {total }}}}}}" }' # asking for today's and tomorrow's hourly prices
+#            if (Parameters["Mode3"] == "3"):
+            data = '{ "query": "{viewer {homes {currentSubscription {priceInfo {current {total }}}}}}" }' # asking for today's and tomorrow's hourly prices
             headers = {
-            'Authorization': 'Bearer '+Parameters["Mode1"], # Tibber Token
-            'Content-Type': 'application/json',
+                'Authorization': 'Bearer '+Parameters["Mode1"], # Tibber Token
+                'Content-Type': 'application/json',
             }
             response = requests.post('https://api.tibber.com/v1-beta/gql', headers=headers, data=data) # make the query to Tibber
             WriteToFile("Response")
@@ -149,8 +145,8 @@ class BasePlugin:
             WriteToFile("Internet is OK")
             data = '{ "query": "{viewer {homes {currentSubscription {priceInfo {today {total }}}}}}" }' # asking for today's and tomorrow's hourly prices
             headers = {
-            'Authorization': 'Bearer '+Parameters["Mode1"], # Tibber Token
-            'Content-Type': 'application/json',
+                'Authorization': 'Bearer '+Parameters["Mode1"], # Tibber Token
+                'Content-Type': 'application/json',
             }
             response = requests.post('https://api.tibber.com/v1-beta/gql', headers=headers, data=data) # make the query to Tibber
             WriteToFile("Response")
