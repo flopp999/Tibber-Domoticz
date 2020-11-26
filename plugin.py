@@ -3,13 +3,13 @@
 # Author: flopp
 #
 """
-<plugin key="Tibber" name="Tibber API Version: 0.81" author="flopp" version="0.81" wikilink="https://github.com/flopp999/Tibber/tree/main/Domoticz" externallink="https://tibber.com/se/invite/8af85f51">
+<plugin key="Tibber" name="Tibber API Version: 0.82" author="flopp" version="0.82" wikilink="https://github.com/flopp999/Tibber/tree/main/Domoticz" externallink="https://tibber.com/se/invite/8af85f51">
     <description>
         <h2>Tibber API is used to fetch data from Tibber.com</h2><br/>
         <h3>Features</h3>
         <ul style="list-style-type:square">
-            <li>Fetch current price, every hour at minute 0</li>
-            <li>Fetch today's mean price, every hour at minute 0</li>
+            <li>Fetch current price, every hour at minute 5</li>
+            <li>Fetch today's mean price, every hour at minute 30</li>
             <li>coming: fetch consumption</li>
         </ul>
         <h3>Devices</h3>
@@ -37,6 +37,12 @@
         <param field="Mode3" label="Data to fetch" width="100px">
             <options>
                 <option label="Current price" value="3" default="true" />
+            </options>
+        </param>
+        <param field="Mode6" label="Debug to file (Tibber.log)" width="70px">
+            <options>
+                <option label="Yes" value="Yes" />
+                <option label="No" value="No" default="true" />
             </options>
         </param>
     </params>
@@ -181,10 +187,11 @@ def CheckInternet():
         return False
 
 def WriteToFile(text):
-    timenow = (datetime.now())
-    file = open("plugins/Tibber/Tibber.log","a")
-    file.write(str(timenow)+" "+text+"\n")
-    file.close()
+    if Parameters["Mode6"] == "Yes":
+        timenow = (datetime.now())
+        file = open("plugins/Tibber/Tibber.log","a")
+        file.write(str(timenow)+" "+text+"\n")
+        file.close()
 
 def onHeartbeat():
     global _plugin
