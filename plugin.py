@@ -73,9 +73,9 @@ class BasePlugin:
     def onStart(self):
         WriteToFile("onStart")
         if Package == True:
-            if ('TibberPrice'  not in Images):
+            if ('tibberprice'  not in Images):
                 Domoticz.Image('tibberprice.zip').Create()
-            ImageID = Images["Tibberprice"].ID
+            ImageID = Images["tibberprice"].ID
             if (len(Devices) < 2):
                 Domoticz.Device(Name="Current Price", Unit=1, TypeName="Custom", Used=1, Image=ImageID, Options={"Custom": "1;"+Parameters["Mode2"]}).Create()
                 Domoticz.Device(Name="Mean Price", Unit=2, TypeName="Custom", Used=1, Image=ImageID, Options={"Custom": "1;"+Parameters["Mode2"]}).Create()
