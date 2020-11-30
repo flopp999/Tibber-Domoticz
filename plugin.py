@@ -47,17 +47,7 @@
 import Domoticz
 Package = True
 try:
-    import requests
-except ImportError as e:
-    Package = False
-
-try:
-    import os
-except ImportError as e:
-    Package = False
-
-try:
-    import json
+    import requests,json
 except ImportError as e:
     Package = False
 
