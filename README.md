@@ -14,6 +14,6 @@ Run in domoticz/plugins "sudo git clone https://github.com/flopp999/Tibber-Domot
 Run "pip3 install -r requirements.txt" to install all packages that this plugin needs  
 Restart Domoticz  
 Add Tibber from Hardware  
-Input your Token  
+Input your Token, get it from here https://developer.tibber.com/  
 
 ![](./tibber.png "Photo")
