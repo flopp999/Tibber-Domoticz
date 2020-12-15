@@ -8,16 +8,14 @@
         <h2>Tibber API is used to fetch data from Tibber.com</h2><br/>
         <h3>Features</h3>
         <ul style="list-style-type:square">
-            <li>Fetch current price, every hour at minute 5</li>
-            <li>Fetch today's mean price, every hour at minute 30</li>
-            <li>coming: fetch consumption</li>
+            <li>Fetch current price, every hour at minute 0</li>
+            <li>Fetch today's mean price at midnight</li>
             <li>Debug to file Tibber.log, in plugins/Tibber</li>
         </ul>
         <h3>Devices</h3>
         <ul style="list-style-type:square">
-            <li>Creates a Custom Sensor with name "xxxxx - Price" and with a unique Tibber icon</li>
-            <li>Select which unit you want use, "kr" or "öre"</li>
-            <li>Select what data to fetch, Current price (coming later and/or Consumption)</li>
+            <li>Creates Custom Sensors with name "Tibber - Mean Price" and "Tibber - Mean Price", both gets a unique Tibber icon</li>
+            <li>Select which unit you want use, "kr" or "öre". If you change after devices is created you need to change the unit manually for both devices.</li>
         </ul>
         <h3>How to get your personal Tibber Access Token?</h3>
         <ul style="list-style-type:square">
@@ -72,7 +70,6 @@ class BasePlugin:
     enabled = False
 
     def __init__(self):
-        self.Count = 0
         return
 
     def onStart(self):
