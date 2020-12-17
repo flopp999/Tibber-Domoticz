@@ -3,19 +3,20 @@
 # Author: flopp
 #
 """
-<plugin key="Tibber" name="Tibber API 0.84" author="flopp" version="0.84" wikilink="https://github.com/flopp999/Tibber/tree/main/Domoticz" externallink="https://tibber.com/se/invite/8af85f51">
+<plugin key="Tibber" name="Tibber API 0.85" author="flopp" version="0.85" wikilink="https://github.com/flopp999/Tibber/tree/main/Domoticz" externallink="https://tibber.com/se/invite/8af85f51">
     <description>
         <h2>Tibber API is used to fetch data from Tibber.com</h2><br/>
         <h3>Features</h3>
         <ul style="list-style-type:square">
-            <li>Fetch current price, every hour at minute 0</li>
-            <li>Fetch today's mean price at midnight</li>
+            <li>Fetch current price including taxes, every hour at minute 0</li>
+            <li>Fetch today's mean price including taxes, at midnight</li>
+            <li>Possible to get prices including transfering fee</li>
             <li>Debug to file Tibber.log, in plugins/Tibber</li>
         </ul>
         <h3>Devices</h3>
         <ul style="list-style-type:square">
-            <li>Creates Custom Sensors with name "Tibber - Mean Price" and "Tibber - Mean Price", both gets a unique Tibber icon</li>
-            <li>Select which unit you want use, "kr" or "öre". If you change after devices is created you need to change the unit manually for both devices.</li>
+            <li>Creates a Custom Sensor with name "xxxxx - Price" and with a unique Tibber icon</li>
+            <li>Select which unit you want use, "kr" or "öre"</li>
         </ul>
         <h3>How to get your personal Tibber Access Token?</h3>
         <ul style="list-style-type:square">
@@ -27,13 +28,14 @@
     </description>
     <params>
         <param field="Mode1" label="Tibber Access Token" width="460px" required="true" default="d1007ead2dc84a2b82f0de19451c5fb22112f7ae11d19bf2bedb224a003ff74a"/>
-        <param field="Mode2" label="Unit" width="100px">
+        <param field="Mode3" label="Transfer fee(öre)" width="50px" required="false" default="0"/>
+        <param field="Mode2" label="Unit for devices" width="50px">
             <options>
                 <option label="öre" value="öre"/>
                 <option label="kr" value="kr" default="true" />
             </options>
         </param>
-        <param field="Mode6" label="Debug to file (Tibber.log)" width="70px">
+        <param field="Mode6" label="Debug to file (Tibber.log)" width="50px">
             <options>
                 <option label="Yes" value="Yes" />
                 <option label="No" value="No" default="true" />
@@ -77,6 +79,12 @@ class BasePlugin:
         self.AllSettings = True
         self.AccessToken = Parameters["Mode1"]
         self.Unit = Parameters["Mode2"]
+        self.Fee = ""
+        try:
+            float(Parameters["Mode3"])
+            self.Fee = float(Parameters["Mode3"])
+        except:
+            Domoticz.Log("The Fee is not a number")
         self.CurrentPriceUpdated = False
         self.MeanPriceUpdated = False
 
@@ -88,16 +96,21 @@ class BasePlugin:
             WriteFile("AccessToken",self.AccessToken)
 
         self.GetDataCurrent = Domoticz.Connection(Name="Get Current", Transport="TCP/IP", Protocol="HTTPS", Address="api.tibber.com", Port="443")
-        self.GetDataCurrent.Connect()
+        if not _plugin.GetDataCurrent.Connected() and not _plugin.GetDataCurrent.Connecting():
+            _plugin.GetDataCurrent.Connect()
         self.GetDataMean = Domoticz.Connection(Name="Get Mean", Transport="TCP/IP", Protocol="HTTPS", Address="api.tibber.com", Port="443")
-        self.GetDataMean.Connect()
+        if not _plugin.GetDataMean.Connected() and not _plugin.GetDataMean.Connecting():
+            _plugin.GetDataMean.Connect()
 
         if ('tibberprice'  not in Images):
             Domoticz.Image('tibberprice.zip').Create()
+        else:
             ImageID = Images["tibberprice"].ID
-            if (len(Devices) < 2):
+            if len(Devices) < 2:
                 Domoticz.Device(Name="Current Price", Unit=1, TypeName="Custom", Used=1, Image=ImageID, Options={"Custom": "1;"+Parameters["Mode2"]}).Create()
                 Domoticz.Device(Name="Mean Price", Unit=2, TypeName="Custom", Used=1, Image=ImageID, Options={"Custom": "1;"+Parameters["Mode2"]}).Create()
+            if self.Fee != "" and len(Devices) < 3:
+                Domoticz.Device(Name="Current Price incl. fee", Unit=3, TypeName="Custom", Used=1, Image=ImageID, Options={"Custom": "1;"+Parameters["Mode2"]}).Create()
 
         if Package == False:
             Domoticz.Log("Missing packages")
@@ -137,10 +150,15 @@ class BasePlugin:
             if (Status == 200):
                 self.data = Data['Data'].decode('UTF-8')
                 self.data = json.loads(self.data)
-                CurrentPrice = round(self.data["data"]["viewer"]["homes"][0]["currentSubscription"]["priceInfo"]["current"]["total"],2)
+                CurrentPrice = round(self.data["data"]["viewer"]["homes"][0]["currentSubscription"]["priceInfo"]["current"]["total"],3)
                 if _plugin.Unit == "öre":
                     CurrentPrice = CurrentPrice * 100
                 Devices[1].Update(0,str(CurrentPrice))
+                if self.Fee != "":
+                    if _plugin.Unit == "öre":
+                        Devices[3].Update(0,str(CurrentPrice+self.Fee))
+                    else:
+                        Devices[3].Update(0,str(CurrentPrice+(self.Fee/100)))
                 WriteDebug("Current Price Updated")
                 Domoticz.Log("Current Price updated")
                 self.CurrentPriceUpdated = True
@@ -153,7 +171,7 @@ class BasePlugin:
                 MeanPrice = float(0)
                 for each in self.data["data"]["viewer"]["homes"][0]["currentSubscription"]["priceInfo"]["today"]:
                     MeanPrice += each["total"]
-                MeanPrice = round(MeanPrice / 24,2)
+                MeanPrice = round(MeanPrice / 24,3)
                 if _plugin.Unit == "öre":
                     MeanPrice = MeanPrice * 100
                 Devices[2].Update(0,str(MeanPrice))
@@ -168,12 +186,14 @@ class BasePlugin:
         HourNow = (datetime.now().hour)
         MinuteNow = (datetime.now().minute)
         if MinuteNow >= 0 and MinuteNow < 59 and self.CurrentPriceUpdated == False:
-            _plugin.GetDataCurrent.Connect()
+            if not _plugin.GetDataCurrent.Connected() and not _plugin.GetDataCurrent.Connecting():
+                _plugin.GetDataCurrent.Connect()
         if MinuteNow == 59 and self.CurrentPriceUpdated == True:
             self.CurrentPriceUpdated = False
 
         if HourNow >= 0 and MinuteNow >= 0 and MinuteNow < 59 and self.MeanPriceUpdated == False:
-            _plugin.GetDataMean.Connect()
+            if not _plugin.GetDataMean.Connected() and not _plugin.GetDataMean.Connecting():
+                _plugin.GetDataMean.Connect()
         if HourNow == 23 and MinuteNow == 59 and self.MeanPriceUpdated == True:
             self.MeanPriceUpdated = False
 
@@ -228,8 +248,10 @@ def CheckInternet():
         WriteDebug("Ping done")
         return True
     except:
-        if _plugin.GetData.Connected():
-            _plugin.GetData.Disconnect()
+        if _plugin.GetDataCurrent.Connected():
+            _plugin.GetDataCurrent.Disconnect()
+        if _plugin.GetDataMean.Connected():
+            _plugin.GetDataMean.Disconnect()
         WriteDebug("Internet is not available")
         return False
 
