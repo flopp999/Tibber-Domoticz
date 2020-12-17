@@ -160,7 +160,7 @@ class BasePlugin:
                     else:
                         Devices[3].Update(0,str(CurrentPrice+(self.Fee/100)))
                 WriteDebug("Current Price Updated")
-                Domoticz.Log("Current Price updated")
+                Domoticz.Log("Current Price Updated")
                 self.CurrentPriceUpdated = True
                 _plugin.GetDataCurrent.Disconnect()
 
