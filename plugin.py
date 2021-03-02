@@ -44,7 +44,7 @@
     </params>
 </plugin>
 """
-#import Domoticz
+import Domoticz
 
 Package = True
 try:
