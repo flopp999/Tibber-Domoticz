@@ -36,8 +36,11 @@ jobs:
     - name: Test with pytest
       run: |
         pytest
-      env:
-        Parameters = { "Mode1" :"d1007ead2dc84a2b82f0de19451c5fb22112f7ae11d19bf2bedb224a003ff74a", "Mode2" :"kr", "Mode3":"1", "Mode6":"No" }
+      env: |
+        Parameters['Mode1'] = d1007ead2dc84a2b82f0de19451c5fb22112f7ae11d19bf2bedb224a003ff74a
+        Parameters['Mode2'] = kr
+        Parameters['Mode3'] = 1
+        Parameters['Mode6'] = No
 
 
 
