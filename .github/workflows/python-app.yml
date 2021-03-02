@@ -30,4 +30,4 @@ jobs:
     
     - name: Test with pytest
       run: |
-        pytest plugin.py --variables=.github/workflows/test.py --doctest-ignore-import-errors
+        pytest plugin.py --variables=.github/workflows/test.json --doctest-ignore-import-errors
