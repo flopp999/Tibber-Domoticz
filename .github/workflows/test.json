@@ -1,6 +1,1 @@
-{
-  "Parameters": {
-    "Mode1": "1",
-    "Mode2": "53.0"
-  }
-}
+assert Parameters['Mode1'] == '11dfe'
