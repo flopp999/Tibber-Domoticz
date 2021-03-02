@@ -67,7 +67,7 @@ logger = logging.getLogger("Tibber")
 logger.setLevel(logging.INFO)
 handler = RotatingFileHandler(dir+'/Tibber.log', maxBytes=50000, backupCount=5)
 logger.addHandler(handler)
-
+print("h2")
 class BasePlugin:
     enabled = False
 
