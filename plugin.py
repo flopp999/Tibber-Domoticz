@@ -44,6 +44,7 @@
     </params>
 </plugin>
 """
+print(Parameters["Mode1"])
 try:
     import Domoticz
 except ImportError as e:
