@@ -29,7 +29,10 @@ jobs:
 
     - name: Test with pytest
       run: |
-        pytest --variables .github/workflows/test.json
+        pytest
+      env:
+        Parameters["Mode1"]: 123
+        
       
         
 
