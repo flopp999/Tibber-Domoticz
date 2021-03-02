@@ -32,4 +32,4 @@ jobs:
     
     - name: Test with pytest
       run: |
-        pytest plugin.py --variables=test.py
+        pytest plugin.py --variables=.github/workflows/test.py
