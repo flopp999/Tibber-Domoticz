@@ -46,6 +46,8 @@
 """
 try:
     import Domoticz
+except ImportError as e:
+    Package = False
 
 Package = True
 try:
