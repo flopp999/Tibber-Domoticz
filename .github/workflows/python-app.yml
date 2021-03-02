@@ -30,8 +30,6 @@ jobs:
     - name: Test with pytest
       run: |
         pytest
-      env:
-        Parameters["Mode1"]: 123
         
       
         
