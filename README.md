@@ -1,4 +1,4 @@
-This plugin will create two devices, current price and mean price for today
+This plugin will create six devices: current price, current price incl fee, minimum, mean and maximum price for today and also Watt
 
 Important, you must Allow new devices, in Domoticz, Setup-Settings-System-Hardware/Devices.
 
