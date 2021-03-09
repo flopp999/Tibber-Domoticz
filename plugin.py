@@ -263,18 +263,20 @@ class BasePlugin:
             url='wss://api.tibber.com/v1-beta/gql/subscriptions',
             headers={'Authorization': 'd1007ead2dc84a2b82f0de19451c5fb22112f7ae11d19bf2bedb224a003ff74a'}
             )
-            async with Client(
-                transport=transport, fetch_schema_from_transport=True,
-            ) as session:
-                query = gql(
-                """
-                subscription{liveMeasurement(homeId:"c70dcbe5-4485-4821-933d-a8a86452737b"){power}}
-                """
-                )
-                result = await session.execute(query)
-                self.watt = result["liveMeasurement"]["power"]
-                Devices[6].Update(0,str(self.watt))
-                Domoticz.Log(str(self.watt))
+            try:
+                async with Client(
+                    transport=transport, fetch_schema_from_transport=True, execute_timeout=7
+                ) as session:
+                    query = gql(
+                    """
+                    subscription{liveMeasurement(homeId:"c70dcbe5-4485-4821-933d-a8a86452737b"){power}}
+                    """
+                    )
+                    result = await session.execute(query)
+                    self.watt = result["liveMeasurement"]["power"]
+                    Devices[6].Update(0,str(self.watt))
+            except asyncio.TimeoutError:
+                pass
 
         asyncio.run(main())
 
