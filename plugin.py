@@ -112,15 +112,10 @@ class BasePlugin:
         self.GetDataCurrent = Domoticz.Connection(Name="Get Current", Transport="TCP/IP", Protocol="HTTPS", Address="api.tibber.com", Port="443")
         if not _plugin.GetDataCurrent.Connected() and not _plugin.GetDataCurrent.Connecting():
             _plugin.GetDataCurrent.Connect()
-        self.GetDataMean = Domoticz.Connection(Name="Get Mean", Transport="TCP/IP", Protocol="HTTPS", Address="api.tibber.com", Port="443")
-        if not _plugin.GetDataMean.Connected() and not _plugin.GetDataMean.Connecting():
-            _plugin.GetDataMean.Connect()
-        self.GetDataMinimum = Domoticz.Connection(Name="Get Minimum", Transport="TCP/IP", Protocol="HTTPS", Address="api.tibber.com", Port="443")
-        if not _plugin.GetDataMinimum.Connected() and not _plugin.GetDataMinimum.Connecting():
-            _plugin.GetDataMinimum.Connect()
-        self.GetDataMaximum = Domoticz.Connection(Name="Get Maximum", Transport="TCP/IP", Protocol="HTTPS", Address="api.tibber.com", Port="443")
-        if not _plugin.GetDataMaximum.Connected() and not _plugin.GetDataMaximum.Connecting():
-            _plugin.GetDataMaximum.Connect()
+
+        self.GetDataMiniMaxMean = Domoticz.Connection(Name="Get MiniMaxMean", Transport="TCP/IP", Protocol="HTTPS", Address="api.tibber.com", Port="443")
+        if not _plugin.GetDataMiniMaxMean.Connected() and not _plugin.GetDataMiniMaxMean.Connecting():
+            _plugin.GetDataMiniMaxMean.Connect()
 
         if ('tibberprice'  not in Images):
             Domoticz.Image('tibberprice.zip').Create()
@@ -151,26 +146,8 @@ class BasePlugin:
                         }
                     Connection.Send({'Verb':'POST', 'URL': '/v1-beta/gql', 'Headers': headers, 'Data': data})
 
-                if Connection.Name == ("Get Minimum"):
+                if Connection.Name == ("Get MiniMaxMean"):
                     data = '{ "query": "{viewer {homes {currentSubscription {priceInfo {today {total }}}}}}" }' # asking for this hourly price
-                    headers = {
-                        'Host': 'api.tibber.com',
-                        'Authorization': 'Bearer '+self.AccessToken, # Tibber Token
-                        'Content-Type': 'application/json'
-                        }
-                    Connection.Send({'Verb':'POST', 'URL': '/v1-beta/gql', 'Headers': headers, 'Data': data})
-
-                if Connection.Name == ("Get Maximum"):
-                    data = '{ "query": "{viewer {homes {currentSubscription {priceInfo {today {total }}}}}}" }' # asking for this hourly price
-                    headers = {
-                        'Host': 'api.tibber.com',
-                        'Authorization': 'Bearer '+self.AccessToken, # Tibber Token
-                        'Content-Type': 'application/json'
-                        }
-                    Connection.Send({'Verb':'POST', 'URL': '/v1-beta/gql', 'Headers': headers, 'Data': data})
-
-                if Connection.Name == ("Get Mean"):
-                    data = '{ "query": "{viewer {homes {currentSubscription {priceInfo {today {total }}}}}}" }' # asking for today's hourly prices
                     headers = {
                         'Host': 'api.tibber.com',
                         'Authorization': 'Bearer '+self.AccessToken, # Tibber Token
@@ -185,8 +162,8 @@ class BasePlugin:
             Domoticz.Error(str("Something went wrong"))
             if _plugin.GetDataCurrent.Connected():
                 _plugin.GetDataCurrent.Disconnect()
-            if _plugin.GetDataMean.Connected():
-                _plugin.GetDataMean.Disconnect()
+            if _plugin.GetDataMiniMaxMean.Connected():
+                _plugin.GetDataMiniMaxMean.Disconnect()
 
         if Connection.Name == ("Get Current"):
             if (Status == 200):
@@ -206,55 +183,33 @@ class BasePlugin:
                 self.CurrentPriceUpdated = True
                 _plugin.GetDataCurrent.Disconnect()
 
-        if Connection.Name == ("Get Minimum"):
+        if Connection.Name == ("Get MiniMaxMean"):
             if (Status == 200):
                 self.data = Data['Data'].decode('UTF-8')
                 self.data = json.loads(self.data)
-                MinimumPrice = []
-                for each in self.data["data"]["viewer"]["homes"][0]["currentSubscription"]["priceInfo"]["today"]:
-                    MinimumPrice.append(each["total"])
-                MinimumPrice = min(MinimumPrice)
-                if _plugin.Unit == "öre":
-                    MinimumPrice = MinimumPrice * 100
-                Devices[4].Update(0,str(round(MinimumPrice,1)))
-                self.MinimumPriceUpdated = True
-                WriteDebug("Minimum Price Updated")
-                Domoticz.Log("Minimum Price Updated")
-                _plugin.GetDataMinimum.Disconnect()
-
-        if Connection.Name == ("Get Maximum"):
-            if (Status == 200):
-                self.data = Data['Data'].decode('UTF-8')
-                self.data = json.loads(self.data)
-                MaximumPrice = []
-                for each in self.data["data"]["viewer"]["homes"][0]["currentSubscription"]["priceInfo"]["today"]:
-                    MaximumPrice.append(each["total"])
-                MaximumPrice = max(MaximumPrice)
-                if _plugin.Unit == "öre":
-                    MaximumPrice = MaximumPrice * 100
-                #need to fix with decimals if KR is used
-                Devices[5].Update(0,str(round(MaximumPrice,1)))
-                self.MaximumPriceUpdated = True
-                WriteDebug("Maximum Price Updated")
-                Domoticz.Log("Maximum Price Updated")
-                _plugin.GetDataMaximum.Disconnect()
-
-        if Connection.Name == ("Get Mean"):
-            if (Status == 200):
-                self.data = Data['Data'].decode('UTF-8')
-                self.data = json.loads(self.data)
+                MiniMaxPrice = []
                 MeanPrice = float(0)
                 for each in self.data["data"]["viewer"]["homes"][0]["currentSubscription"]["priceInfo"]["today"]:
+                    MiniMaxPrice.append(each["total"])
                     MeanPrice += each["total"]
+                MinimumPrice = min(MiniMaxPrice)
+                MaximumPrice = max(MiniMaxPrice)
                 MeanPrice = round(MeanPrice / 24,3)
                 if _plugin.Unit == "öre":
+                    MinimumPrice = MinimumPrice * 100
+                    MaximumPrice = MaximumPrice * 100
                     MeanPrice = MeanPrice * 100
                 Devices[2].Update(0,str(MeanPrice))
-                self.MeanPriceUpdated = True
+                Devices[4].Update(0,str(round(MinimumPrice,1)))
+                Devices[5].Update(0,str(round(MaximumPrice,1)))
+                self.MiniMaxMeanPriceUpdated = True
+                WriteDebug("Minimum Price Updated")
+                WriteDebug("Maximum Price Updated")
                 WriteDebug("Mean Price Updated")
+                Domoticz.Log("Minimum Price Updated")
+                Domoticz.Log("Maximum Price Updated")
                 Domoticz.Log("Mean Price Updated")
-                _plugin.GetDataMean.Disconnect()
-
+                _plugin.GetDataMiniMaxMean.Disconnect()
 
     def onHeartbeat(self):
         WriteDebug("onHeartbeat")
@@ -291,27 +246,12 @@ class BasePlugin:
         if MinuteNow == 59 and self.CurrentPriceUpdated == True:
             self.CurrentPriceUpdated = False
 
-        if HourNow >= 0 and MinuteNow >= 10 and MinuteNow < 59 and self.MinimumPriceUpdated == False:
-            if not _plugin.GetDataMinimum.Connected() and not _plugin.GetDataMinimum.Connecting():
-                WriteDebug("onHeartbeatGetDataMinimum")
-                _plugin.GetDataMinimum.Connect()
-        if HourNow == 23 and MinuteNow == 59 and self.MinimumPriceUpdated == True:
-            self.MinimumPriceUpdated = False
-
-        if HourNow >= 0 and MinuteNow >= 12 and MinuteNow < 59 and self.MaximumPriceUpdated == False:
-            if not _plugin.GetDataMaximum.Connected() and not _plugin.GetDataMaximum.Connecting():
-                WriteDebug("onHeartbeatGetDataMaximum")
-                _plugin.GetDataMaximum.Connect()
-        if HourNow == 23 and MinuteNow == 59 and self.MaximumPriceUpdated == True:
-            self.MaximumPriceUpdated = False
-
-        if HourNow >= 1 and MinuteNow >= 6 and MinuteNow < 59 and self.MeanPriceUpdated == False:
-            if not _plugin.GetDataMean.Connected() and not _plugin.GetDataMean.Connecting():
-                WriteDebug("onHeartbeatGetDataMean")
-                _plugin.GetDataMean.Connect()
-        if HourNow == 23 and MinuteNow == 59 and self.MeanPriceUpdated == True:
-            self.MeanPriceUpdated = False
-
+        if HourNow >= 0 and MinuteNow >= 10 and MinuteNow < 59 and self.MiniMaxMeanPriceUpdated == False:
+            if not _plugin.GetDataMiniMaxMean.Connected() and not _plugin.GetDataMiniMaxMean.Connecting():
+                WriteDebug("onHeartbeatGetDataMiniMaxMean")
+                _plugin.GetDataMiniMaxMean.Connect()
+        if HourNow == 23 and MinuteNow == 59 and self.MiniMaxMeanPriceUpdated == True:
+            self.MiniMaxMeanPriceUpdated = False
 
 global _plugin
 _plugin = BasePlugin()
@@ -365,8 +305,8 @@ def CheckInternet():
     except:
         if _plugin.GetDataCurrent.Connected():
             _plugin.GetDataCurrent.Disconnect()
-        if _plugin.GetDataMean.Connected():
-            _plugin.GetDataMean.Disconnect()
+        if _plugin.GetDataMiniMaxMean.Connected():
+            _plugin.GetDataMiniMaxMean.Disconnect()
         WriteDebug("Internet is not available")
         return False
 
