@@ -63,10 +63,15 @@ try:
 except ImportError as e:
     Package = False
 
+try:
+    from gql import Client, gql
+except ImportError as e:
+    Package = False
 
-from gql import Client, gql
-from gql.transport.websockets import WebsocketsTransport
-
+try:
+    from gql.transport.websockets import WebsocketsTransport
+except ImportError as e:
+    Package = False
 
 dir = os.path.dirname(os.path.realpath(__file__))
 logger = logging.getLogger("Tibber")
@@ -144,7 +149,6 @@ class BasePlugin:
                         'Authorization': 'Bearer '+self.AccessToken, # Tibber Token
                         'Content-Type': 'application/json'
                         }
-                    WriteDebug("innan current")
                     Connection.Send({'Verb':'POST', 'URL': '/v1-beta/gql', 'Headers': headers, 'Data': data})
 
                 if Connection.Name == ("Get Minimum"):
@@ -154,7 +158,6 @@ class BasePlugin:
                         'Authorization': 'Bearer '+self.AccessToken, # Tibber Token
                         'Content-Type': 'application/json'
                         }
-                    WriteDebug("innan minimum")
                     Connection.Send({'Verb':'POST', 'URL': '/v1-beta/gql', 'Headers': headers, 'Data': data})
 
                 if Connection.Name == ("Get Maximum"):
@@ -164,7 +167,6 @@ class BasePlugin:
                         'Authorization': 'Bearer '+self.AccessToken, # Tibber Token
                         'Content-Type': 'application/json'
                         }
-                    WriteDebug("innan maximum")
                     Connection.Send({'Verb':'POST', 'URL': '/v1-beta/gql', 'Headers': headers, 'Data': data})
 
                 if Connection.Name == ("Get Mean"):
@@ -174,7 +176,6 @@ class BasePlugin:
                         'Authorization': 'Bearer '+self.AccessToken, # Tibber Token
                         'Content-Type': 'application/json'
                         }
-                    WriteDebug("innan mean")
                     Connection.Send({'Verb':'POST', 'URL': '/v1-beta/gql', 'Headers': headers, 'Data': data})
 
     def onMessage(self, Connection, Data):
