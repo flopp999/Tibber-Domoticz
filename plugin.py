@@ -3,7 +3,7 @@
 # Author: flopp
 #
 """
-<plugin key="Tibber" name="Tibber API 0.85" author="flopp" version="0.85" wikilink="https://github.com/flopp999/Tibber/tree/main/Domoticz" externallink="https://tibber.com/se/invite/8af85f51">
+<plugin key="Tibber" name="Tibber API 0.86" author="flopp" version="0.86" wikilink="https://github.com/flopp999/Tibber/tree/main/Domoticz" externallink="https://tibber.com/se/invite/8af85f51">
     <description>
         <h2>Tibber API is used to fetch data from Tibber.com</h2><br/>
         <h3>Features</h3>
@@ -35,6 +35,7 @@
                 <option label="kr" value="kr" default="true" />
             </options>
         </param>
+        <param field="Mode4" label="HomeID" width="475px" required="false" default="c70dcbe5-4485-4821-933d-a8a86452737b"/>
         <param field="Mode6" label="Debug to file (Tibber.log)" width="50px">
             <options>
                 <option label="Yes" value="Yes" />
@@ -44,15 +45,11 @@
     </params>
 </plugin>
 """
-
-try:
-    import Domoticz
-except ImportError as e:
-    Package = False
+import Domoticz
 
 Package = True
 try:
-    import requests, json, os, logging
+    import requests, json, os, logging, asyncio
 except ImportError as e:
     Package = False
 
@@ -66,12 +63,22 @@ try:
 except ImportError as e:
     Package = False
 
+try:
+    from gql import Client, gql
+except ImportError as e:
+    Package = False
+
+try:
+    from gql.transport.websockets import WebsocketsTransport
+except ImportError as e:
+    Package = False
+
 dir = os.path.dirname(os.path.realpath(__file__))
 logger = logging.getLogger("Tibber")
 logger.setLevel(logging.INFO)
 handler = RotatingFileHandler(dir+'/Tibber.log', maxBytes=50000, backupCount=5)
 logger.addHandler(handler)
-print("h2")
+
 class BasePlugin:
     enabled = False
 
@@ -84,6 +91,7 @@ class BasePlugin:
         self.AccessToken = Parameters["Mode1"]
         self.Unit = Parameters["Mode2"]
         self.Fee = ""
+        self.HomeID = Parameters["Mode4"]
         try:
             float(Parameters["Mode3"])
             self.Fee = float(Parameters["Mode3"])
@@ -91,6 +99,8 @@ class BasePlugin:
             Domoticz.Log("The Fee is not a number")
         self.CurrentPriceUpdated = False
         self.MeanPriceUpdated = False
+        self.MinimumPriceUpdated = False
+        self.MaximumPriceUpdated = False
 
         if len(self.AccessToken) < 43:
             Domoticz.Log("Access Token too short")
@@ -105,15 +115,25 @@ class BasePlugin:
         self.GetDataMean = Domoticz.Connection(Name="Get Mean", Transport="TCP/IP", Protocol="HTTPS", Address="api.tibber.com", Port="443")
         if not _plugin.GetDataMean.Connected() and not _plugin.GetDataMean.Connecting():
             _plugin.GetDataMean.Connect()
+        self.GetDataMinimum = Domoticz.Connection(Name="Get Minimum", Transport="TCP/IP", Protocol="HTTPS", Address="api.tibber.com", Port="443")
+        if not _plugin.GetDataMinimum.Connected() and not _plugin.GetDataMinimum.Connecting():
+            _plugin.GetDataMinimum.Connect()
+        self.GetDataMaximum = Domoticz.Connection(Name="Get Maximum", Transport="TCP/IP", Protocol="HTTPS", Address="api.tibber.com", Port="443")
+        if not _plugin.GetDataMaximum.Connected() and not _plugin.GetDataMaximum.Connecting():
+            _plugin.GetDataMaximum.Connect()
 
         if ('tibberprice'  not in Images):
             Domoticz.Image('tibberprice.zip').Create()
         else:
             ImageID = Images["tibberprice"].ID
-            if len(Devices) < 2:
+            if len(Devices) < 6:
                 Domoticz.Device(Name="Current Price", Unit=1, TypeName="Custom", Used=1, Image=ImageID, Options={"Custom": "1;"+Parameters["Mode2"]}).Create()
                 Domoticz.Device(Name="Mean Price", Unit=2, TypeName="Custom", Used=1, Image=ImageID, Options={"Custom": "1;"+Parameters["Mode2"]}).Create()
-            if self.Fee != "" and len(Devices) < 3:
+                Domoticz.Device(Name="Minimum Price", Unit=4, TypeName="Custom", Used=1, Image=ImageID, Options={"Custom": "1;"+Parameters["Mode2"]}).Create()
+                Domoticz.Device(Name="Maximum Price", Unit=5, TypeName="Custom", Used=1, Image=ImageID, Options={"Custom": "1;"+Parameters["Mode2"]}).Create()
+                Domoticz.Device(Name="Watt", Unit=6, TypeName="Custom", Used=1, Image=ImageID, Options={"Custom": "1;watt"}).Create()
+
+            if self.Fee != "" and len(Devices) < 6:
                 Domoticz.Device(Name="Current Price incl. fee", Unit=3, TypeName="Custom", Used=1, Image=ImageID, Options={"Custom": "1;"+Parameters["Mode2"]}).Create()
 
         if Package == False:
@@ -124,6 +144,24 @@ class BasePlugin:
             if (Status == 0):
                 if Connection.Name == ("Get Current"):
                     data = '{ "query": "{viewer {homes {currentSubscription {priceInfo {current {total }}}}}}" }' # asking for this hourly price
+                    headers = {
+                        'Host': 'api.tibber.com',
+                        'Authorization': 'Bearer '+self.AccessToken, # Tibber Token
+                        'Content-Type': 'application/json'
+                        }
+                    Connection.Send({'Verb':'POST', 'URL': '/v1-beta/gql', 'Headers': headers, 'Data': data})
+
+                if Connection.Name == ("Get Minimum"):
+                    data = '{ "query": "{viewer {homes {currentSubscription {priceInfo {today {total }}}}}}" }' # asking for this hourly price
+                    headers = {
+                        'Host': 'api.tibber.com',
+                        'Authorization': 'Bearer '+self.AccessToken, # Tibber Token
+                        'Content-Type': 'application/json'
+                        }
+                    Connection.Send({'Verb':'POST', 'URL': '/v1-beta/gql', 'Headers': headers, 'Data': data})
+
+                if Connection.Name == ("Get Maximum"):
+                    data = '{ "query": "{viewer {homes {currentSubscription {priceInfo {today {total }}}}}}" }' # asking for this hourly price
                     headers = {
                         'Host': 'api.tibber.com',
                         'Authorization': 'Bearer '+self.AccessToken, # Tibber Token
@@ -157,7 +195,7 @@ class BasePlugin:
                 CurrentPrice = round(self.data["data"]["viewer"]["homes"][0]["currentSubscription"]["priceInfo"]["current"]["total"],3)
                 if _plugin.Unit == "öre":
                     CurrentPrice = CurrentPrice * 100
-                Devices[1].Update(0,str(CurrentPrice))
+                Devices[1].Update(0,str(round(CurrentPrice,1)))
                 if self.Fee != "":
                     if _plugin.Unit == "öre":
                         Devices[3].Update(0,str(CurrentPrice+self.Fee))
@@ -167,6 +205,39 @@ class BasePlugin:
                 Domoticz.Log("Current Price Updated")
                 self.CurrentPriceUpdated = True
                 _plugin.GetDataCurrent.Disconnect()
+
+        if Connection.Name == ("Get Minimum"):
+            if (Status == 200):
+                self.data = Data['Data'].decode('UTF-8')
+                self.data = json.loads(self.data)
+                MinimumPrice = []
+                for each in self.data["data"]["viewer"]["homes"][0]["currentSubscription"]["priceInfo"]["today"]:
+                    MinimumPrice.append(each["total"])
+                MinimumPrice = min(MinimumPrice)
+                if _plugin.Unit == "öre":
+                    MinimumPrice = MinimumPrice * 100
+                Devices[4].Update(0,str(round(MinimumPrice,1)))
+                self.MinimumPriceUpdated = True
+                WriteDebug("Minimum Price Updated")
+                Domoticz.Log("Minimum Price Updated")
+                _plugin.GetDataMinimum.Disconnect()
+
+        if Connection.Name == ("Get Maximum"):
+            if (Status == 200):
+                self.data = Data['Data'].decode('UTF-8')
+                self.data = json.loads(self.data)
+                MaximumPrice = []
+                for each in self.data["data"]["viewer"]["homes"][0]["currentSubscription"]["priceInfo"]["today"]:
+                    MaximumPrice.append(each["total"])
+                MaximumPrice = max(MaximumPrice)
+                if _plugin.Unit == "öre":
+                    MaximumPrice = MaximumPrice * 100
+                #need to fix with decimals if KR is used
+                Devices[5].Update(0,str(round(MaximumPrice,1)))
+                self.MaximumPriceUpdated = True
+                WriteDebug("Maximum Price Updated")
+                Domoticz.Log("Maximum Price Updated")
+                _plugin.GetDataMaximum.Disconnect()
 
         if Connection.Name == ("Get Mean"):
             if (Status == 200):
@@ -189,14 +260,54 @@ class BasePlugin:
         WriteDebug("onHeartbeat")
         HourNow = (datetime.now().hour)
         MinuteNow = (datetime.now().minute)
-        if MinuteNow >= 0 and MinuteNow < 59 and self.CurrentPriceUpdated == False:
+
+        async def main():
+            transport = WebsocketsTransport(
+            url='wss://api.tibber.com/v1-beta/gql/subscriptions',
+            headers={'Authorization': 'd1007ead2dc84a2b82f0de19451c5fb22112f7ae11d19bf2bedb224a003ff74a'}
+            )
+
+            try:
+                async with Client(
+                    transport=transport, fetch_schema_from_transport=True, execute_timeout=7
+                ) as session:
+                    query = gql(
+                    """
+                    subscription{liveMeasurement(homeId:"c70dcbe5-4485-4821-933d-a8a86452737b"){power}}
+                    """
+                    )
+                    result = await session.execute(query)
+                    self.watt = result["liveMeasurement"]["power"]
+                    Devices[6].Update(0,str(self.watt))
+            except asyncio.TimeoutError:
+                pass
+
+        asyncio.run(main())
+
+        if MinuteNow < 59 and self.CurrentPriceUpdated == False:
             if not _plugin.GetDataCurrent.Connected() and not _plugin.GetDataCurrent.Connecting():
+                WriteDebug("onHeartbeatGetDataCurrent")
                 _plugin.GetDataCurrent.Connect()
         if MinuteNow == 59 and self.CurrentPriceUpdated == True:
             self.CurrentPriceUpdated = False
 
-        if HourNow >= 0 and MinuteNow >= 0 and MinuteNow < 59 and self.MeanPriceUpdated == False:
+        if HourNow >= 0 and MinuteNow >= 10 and MinuteNow < 59 and self.MinimumPriceUpdated == False:
+            if not _plugin.GetDataMinimum.Connected() and not _plugin.GetDataMinimum.Connecting():
+                WriteDebug("onHeartbeatGetDataMinimum")
+                _plugin.GetDataMinimum.Connect()
+        if HourNow == 23 and MinuteNow == 59 and self.MinimumPriceUpdated == True:
+            self.MinimumPriceUpdated = False
+
+        if HourNow >= 0 and MinuteNow >= 12 and MinuteNow < 59 and self.MaximumPriceUpdated == False:
+            if not _plugin.GetDataMaximum.Connected() and not _plugin.GetDataMaximum.Connecting():
+                WriteDebug("onHeartbeatGetDataMaximum")
+                _plugin.GetDataMaximum.Connect()
+        if HourNow == 23 and MinuteNow == 59 and self.MaximumPriceUpdated == True:
+            self.MaximumPriceUpdated = False
+
+        if HourNow >= 1 and MinuteNow >= 6 and MinuteNow < 59 and self.MeanPriceUpdated == False:
             if not _plugin.GetDataMean.Connected() and not _plugin.GetDataMean.Connecting():
+                WriteDebug("onHeartbeatGetDataMean")
                 _plugin.GetDataMean.Connect()
         if HourNow == 23 and MinuteNow == 59 and self.MeanPriceUpdated == True:
             self.MeanPriceUpdated = False
@@ -248,7 +359,7 @@ def CheckInternet():
     WriteDebug("Entered CheckInternet")
     try:
         WriteDebug("Try ping")
-        requests.get(url='http://api.tibber.com/', timeout=15)
+        requests.get(url='http://api.tibber.com/', timeout=2)
         WriteDebug("Ping done")
         return True
     except:
