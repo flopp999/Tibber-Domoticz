@@ -198,9 +198,9 @@ class BasePlugin:
                 Devices[1].Update(0,str(round(CurrentPrice,1)))
                 if self.Fee != "":
                     if _plugin.Unit == "öre":
-                        Devices[3].Update(0,str(CurrentPrice+self.Fee))
+                        Devices[3].Update(0,str(round(CurrentPrice+self.Fee,1)))
                     else:
-                        Devices[3].Update(0,str(CurrentPrice+(self.Fee/100)))
+                        Devices[3].Update(0,str(round(CurrentPrice+(self.Fee/100),1)))
                 WriteDebug("Current Price Updated")
                 Domoticz.Log("Current Price Updated")
                 self.CurrentPriceUpdated = True
