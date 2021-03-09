@@ -66,6 +66,21 @@ try:
 except ImportError as e:
     Package = False
 
+try:  # TODO: Fixme
+    Devices
+except NameError:
+    Devices = {}
+
+try:  # TODO: Fixme
+    Images
+except NameError:
+    Images = {}
+
+try:  # TODO: Fixme
+    Parameters
+except NameError:
+    Parameters = {}
+
 dir = os.path.dirname(os.path.realpath(__file__))
 logger = logging.getLogger("Tibber")
 logger.setLevel(logging.INFO)
