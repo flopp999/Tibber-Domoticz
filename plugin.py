@@ -35,6 +35,7 @@
                 <option label="kr" value="kr" default="true" />
             </options>
         </param>
+        <param field="Mode4" label="HomeID" width="475px" required="false" default="c70dcbe5-4485-4821-933d-a8a86452737b"/>
         <param field="Mode6" label="Debug to file (Tibber.log)" width="50px">
             <options>
                 <option label="Yes" value="Yes" />
@@ -85,6 +86,7 @@ class BasePlugin:
         self.AccessToken = Parameters["Mode1"]
         self.Unit = Parameters["Mode2"]
         self.Fee = ""
+        self.HomeID = Parameters["Mode4"]
         try:
             float(Parameters["Mode3"])
             self.Fee = float(Parameters["Mode3"])
@@ -263,6 +265,7 @@ class BasePlugin:
             url='wss://api.tibber.com/v1-beta/gql/subscriptions',
             headers={'Authorization': 'd1007ead2dc84a2b82f0de19451c5fb22112f7ae11d19bf2bedb224a003ff74a'}
             )
+
             try:
                 async with Client(
                     transport=transport, fetch_schema_from_transport=True, execute_timeout=7
