@@ -17,3 +17,6 @@ Add Tibber from Hardware
 Input your Token and HomeID, get it from here https://developer.tibber.com/  
 
 ![](./tibber.png "Photo")
+
+
+Support me with a coffee https://www.buymeacoffee.com/flopp999 or use my Tibber link https://tibber.com/se/invite/8af85f51
