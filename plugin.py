@@ -36,7 +36,6 @@
                 <option label="kr" value="kr" default="true" />
             </options>
         </param>
-        <param field="Mode4" label="HomeID" width="475px" required="false" default="c70dcbe5-4485-4821-933d-a8a86452737b"/>
         <param field="Mode6" label="Debug to file (Tibber.log)" width="50px">
             <options>
                 <option label="Yes" value="Yes" />
