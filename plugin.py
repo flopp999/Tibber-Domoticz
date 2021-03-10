@@ -3,9 +3,10 @@
 # Author: flopp
 #
 """
-<plugin key="Tibber" name="Tibber API 0.86" author="flopp" version="0.86" wikilink="https://github.com/flopp999/Tibber/tree/main/Domoticz" externallink="https://tibber.com/se/invite/8af85f51">
+<plugin key="Tibber" name="Tibber API 0.87" author="flopp" version="0.87" wikilink="https://github.com/flopp999/Tibber/tree/main/Domoticz" externallink="https://tibber.com/se/invite/8af85f51">
     <description>
         <h2>Tibber API is used to fetch data from Tibber.com</h2><br/>
+        <h2>Support me with a coffee &<a href="https://www.buymeacoffee.com/flopp999">https://www.buymeacoffee.com/flopp999</a></h2><br/>
         <h3>Features</h3>
         <ul style="list-style-type:square">
             <li>Fetch current price including taxes, every hour at minute 0</li>
@@ -234,7 +235,8 @@ class BasePlugin:
                     result = await session.execute(query)
                     self.watt = result["liveMeasurement"]["power"]
                     Devices[6].Update(0,str(self.watt))
-            except asyncio.TimeoutError:
+            except: # work on python 3.x
+                WriteDebug("Something went wrong during getting Power from Tibber")
                 pass
 
         asyncio.run(main())
