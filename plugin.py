@@ -1,9 +1,9 @@
 # Tibber Python Plugin
 #
-# Author: flopp
+# Author: flopp999
 #
 """
-<plugin key="Tibber" name="Tibber API 0.87" author="flopp" version="0.87" wikilink="https://github.com/flopp999/Tibber/tree/main/Domoticz" externallink="https://tibber.com/se/invite/8af85f51">
+<plugin key="TibberDemo" name="Tibber API 0.88" author="flopp999" version="0.88" wikilink="https://github.com/flopp999/Tibber/tree/main/Domoticz" externallink="https://tibber.com/se/invite/8af85f51">
     <description>
         <h2>Tibber API is used to fetch data from Tibber.com</h2><br/>
         <h2>Support me with a coffee &<a href="https://www.buymeacoffee.com/flopp999">https://www.buymeacoffee.com/flopp999</a></h2><br/>
@@ -91,7 +91,13 @@ class BasePlugin:
         self.AccessToken = Parameters["Mode1"]
         self.Unit = Parameters["Mode2"]
         self.Fee = ""
-        self.HomeID = Parameters["Mode4"]
+        self.HomeID = ""
+        self.headers = {
+            'Host': 'api.tibber.com',
+            'Authorization': 'Bearer '+self.AccessToken, # Tibber Token
+            'Content-Type': 'application/json'
+            }
+
         try:
             float(Parameters["Mode3"])
             self.Fee = float(Parameters["Mode3"])
@@ -109,6 +115,23 @@ class BasePlugin:
         else:
             WriteFile("AccessToken",self.AccessToken)
 
+        if ('tibberprice'  not in Images):
+            Domoticz.Image('tibberprice.zip').Create()
+
+        if len(Devices) < 6:
+            ImageID = Images["tibberprice"].ID
+            Domoticz.Device(Name="Current Price", Unit=1, TypeName="Custom", Used=1, Image=ImageID, Options={"Custom": "1;"+Parameters["Mode2"]}).Create()
+            Domoticz.Device(Name="Mean Price", Unit=2, TypeName="Custom", Used=1, Image=ImageID, Options={"Custom": "1;"+Parameters["Mode2"]}).Create()
+            Domoticz.Device(Name="Minimum Price", Unit=4, TypeName="Custom", Used=1, Image=ImageID, Options={"Custom": "1;"+Parameters["Mode2"]}).Create()
+            Domoticz.Device(Name="Maximum Price", Unit=5, TypeName="Custom", Used=1, Image=ImageID, Options={"Custom": "1;"+Parameters["Mode2"]}).Create()
+            Domoticz.Device(Name="Watt", Unit=6, TypeName="Custom", Used=1, Image=ImageID, Options={"Custom": "1;watt"}).Create()
+
+            if self.Fee != "" and len(Devices) < 6:
+                Domoticz.Device(Name="Current Price incl. fee", Unit=3, TypeName="Custom", Used=1, Image=ImageID, Options={"Custom": "1;"+Parameters["Mode2"]}).Create()
+
+        if Package == False:
+            Domoticz.Log("Missing packages")
+
         self.GetDataCurrent = Domoticz.Connection(Name="Get Current", Transport="TCP/IP", Protocol="HTTPS", Address="api.tibber.com", Port="443")
         if not _plugin.GetDataCurrent.Connected() and not _plugin.GetDataCurrent.Connecting():
             _plugin.GetDataCurrent.Connect()
@@ -117,43 +140,24 @@ class BasePlugin:
         if not _plugin.GetDataMiniMaxMean.Connected() and not _plugin.GetDataMiniMaxMean.Connecting():
             _plugin.GetDataMiniMaxMean.Connect()
 
-        if ('tibberprice'  not in Images):
-            Domoticz.Image('tibberprice.zip').Create()
-        else:
-            ImageID = Images["tibberprice"].ID
-            if len(Devices) < 6:
-                Domoticz.Device(Name="Current Price", Unit=1, TypeName="Custom", Used=1, Image=ImageID, Options={"Custom": "1;"+Parameters["Mode2"]}).Create()
-                Domoticz.Device(Name="Mean Price", Unit=2, TypeName="Custom", Used=1, Image=ImageID, Options={"Custom": "1;"+Parameters["Mode2"]}).Create()
-                Domoticz.Device(Name="Minimum Price", Unit=4, TypeName="Custom", Used=1, Image=ImageID, Options={"Custom": "1;"+Parameters["Mode2"]}).Create()
-                Domoticz.Device(Name="Maximum Price", Unit=5, TypeName="Custom", Used=1, Image=ImageID, Options={"Custom": "1;"+Parameters["Mode2"]}).Create()
-                Domoticz.Device(Name="Watt", Unit=6, TypeName="Custom", Used=1, Image=ImageID, Options={"Custom": "1;watt"}).Create()
-
-            if self.Fee != "" and len(Devices) < 6:
-                Domoticz.Device(Name="Current Price incl. fee", Unit=3, TypeName="Custom", Used=1, Image=ImageID, Options={"Custom": "1;"+Parameters["Mode2"]}).Create()
-
-        if Package == False:
-            Domoticz.Log("Missing packages")
+        self.GetHomeID = Domoticz.Connection(Name="Get HomeID", Transport="TCP/IP", Protocol="HTTPS", Address="api.tibber.com", Port="443")
+        if not _plugin.GetHomeID.Connected() and not _plugin.GetHomeID.Connecting():
+            _plugin.GetHomeID.Connect()
 
     def onConnect(self, Connection, Status, Description):
         if CheckInternet() == True and self.AllSettings == True:
             if (Status == 0):
                 if Connection.Name == ("Get Current"):
                     data = '{ "query": "{viewer {homes {currentSubscription {priceInfo {current {total }}}}}}" }' # asking for this hourly price
-                    headers = {
-                        'Host': 'api.tibber.com',
-                        'Authorization': 'Bearer '+self.AccessToken, # Tibber Token
-                        'Content-Type': 'application/json'
-                        }
-                    Connection.Send({'Verb':'POST', 'URL': '/v1-beta/gql', 'Headers': headers, 'Data': data})
+                    Connection.Send({'Verb':'POST', 'URL': '/v1-beta/gql', 'Headers': self.headers, 'Data': data})
 
                 if Connection.Name == ("Get MiniMaxMean"):
                     data = '{ "query": "{viewer {homes {currentSubscription {priceInfo {today {total }}}}}}" }' # asking for this hourly price
-                    headers = {
-                        'Host': 'api.tibber.com',
-                        'Authorization': 'Bearer '+self.AccessToken, # Tibber Token
-                        'Content-Type': 'application/json'
-                        }
-                    Connection.Send({'Verb':'POST', 'URL': '/v1-beta/gql', 'Headers': headers, 'Data': data})
+                    Connection.Send({'Verb':'POST', 'URL': '/v1-beta/gql', 'Headers': self.headers, 'Data': data})
+
+                if Connection.Name == ("Get HomeID"):
+                    data = '{ "query": "{viewer {homes {id}}}" }' # asking for this hourly price
+                    Connection.Send({'Verb':'POST', 'URL': '/v1-beta/gql', 'Headers': self.headers, 'Data': data})
 
     def onMessage(self, Connection, Data):
         Status = int(Data["Status"])
@@ -165,8 +169,8 @@ class BasePlugin:
             if _plugin.GetDataMiniMaxMean.Connected():
                 _plugin.GetDataMiniMaxMean.Disconnect()
 
-        if Connection.Name == ("Get Current"):
-            if (Status == 200):
+        if (Status == 200):
+            if Connection.Name == ("Get Current"):
                 self.data = Data['Data'].decode('UTF-8')
                 self.data = json.loads(self.data)
                 CurrentPrice = round(self.data["data"]["viewer"]["homes"][0]["currentSubscription"]["priceInfo"]["current"]["total"],3)
@@ -183,8 +187,16 @@ class BasePlugin:
                 self.CurrentPriceUpdated = True
                 _plugin.GetDataCurrent.Disconnect()
 
-        if Connection.Name == ("Get MiniMaxMean"):
-            if (Status == 200):
+            if Connection.Name == ("Get HomeID"):
+                self.data = Data['Data'].decode('UTF-8')
+                self.data = json.loads(self.data)
+                self.HomeID = self.data["data"]["viewer"]["homes"][0]["id"]
+                Domoticz.Log(str(self.HomeID))
+                Domoticz.Log("HomeID collected")
+                WriteDebug("HomeID collected")
+                _plugin.GetHomeID.Disconnect()
+
+            if Connection.Name == ("Get MiniMaxMean"):
                 self.data = Data['Data'].decode('UTF-8')
                 self.data = json.loads(self.data)
                 MiniMaxPrice = []
@@ -219,18 +231,13 @@ class BasePlugin:
         async def main():
             transport = WebsocketsTransport(
             url='wss://api.tibber.com/v1-beta/gql/subscriptions',
-            headers={'Authorization': 'd1007ead2dc84a2b82f0de19451c5fb22112f7ae11d19bf2bedb224a003ff74a'}
+            headers={'Authorization': self.AccessToken}
             )
-
             try:
                 async with Client(
                     transport=transport, fetch_schema_from_transport=True, execute_timeout=7
                 ) as session:
-                    query = gql(
-                    """
-                    subscription{liveMeasurement(homeId:"c70dcbe5-4485-4821-933d-a8a86452737b"){power}}
-                    """
-                    )
+                    query = gql("subscription{liveMeasurement(homeId:\""+ self.HomeID +"\"){power}}")
                     result = await session.execute(query)
                     self.watt = result["liveMeasurement"]["power"]
                     Devices[6].Update(0,str(self.watt))
