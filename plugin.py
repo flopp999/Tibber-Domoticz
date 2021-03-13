@@ -3,7 +3,7 @@
 # Author: flopp999
 #
 """
-<plugin key="TibberDemo" name="Tibber API 0.88" author="flopp999" version="0.88" wikilink="https://github.com/flopp999/Tibber/tree/main/Domoticz" externallink="https://tibber.com/se/invite/8af85f51">
+<plugin key="Tibber" name="Tibber API 0.89" author="flopp999" version="0.89" wikilink="https://github.com/flopp999/Tibber/tree/main/Domoticz" externallink="https://tibber.com/se/invite/8af85f51">
     <description>
         <h2>Tibber API is used to fetch data from Tibber.com</h2><br/>
         <h2>Support me with a coffee &<a href="https://www.buymeacoffee.com/flopp999">https://www.buymeacoffee.com/flopp999</a></h2><br/>
@@ -34,6 +34,12 @@
             <options>
                 <option label="öre" value="öre"/>
                 <option label="kr" value="kr" default="true" />
+            </options>
+        </param>
+        <param field="Mode4" label="Tibber pulse?" width="50px">
+            <options>
+                <option label="Yes" value="Yes" />
+                <option label="No" value="No" default="true" />
             </options>
         </param>
         <param field="Mode6" label="Debug to file (Tibber.log)" width="50px">
@@ -92,6 +98,7 @@ class BasePlugin:
         self.Unit = Parameters["Mode2"]
         self.Fee = ""
         self.HomeID = ""
+        self.Pulse = Parameters["Mode4"]
         self.headers = {
             'Host': 'api.tibber.com',
             'Authorization': 'Bearer '+self.AccessToken, # Tibber Token
@@ -227,24 +234,26 @@ class BasePlugin:
         HourNow = (datetime.now().hour)
         MinuteNow = (datetime.now().minute)
 
-        async def main():
-            transport = WebsocketsTransport(
-            url='wss://api.tibber.com/v1-beta/gql/subscriptions',
-            headers={'Authorization': self.AccessToken}
-            )
-            try:
-                async with Client(
-                    transport=transport, fetch_schema_from_transport=True, execute_timeout=7
-                ) as session:
-                    query = gql("subscription{liveMeasurement(homeId:\""+ self.HomeID +"\"){power}}")
-                    result = await session.execute(query)
-                    self.watt = result["liveMeasurement"]["power"]
-                    Devices[6].Update(0,str(self.watt))
-            except: # work on python 3.x
-                WriteDebug("Something went wrong during getting Power from Tibber")
-                pass
+        if self.Pulse == "Yes":
+            async def main():
+                transport = WebsocketsTransport(
+                url='wss://api.tibber.com/v1-beta/gql/subscriptions',
+                headers={'Authorization': self.AccessToken}
+                )
+                try:
+                    async with Client(
+                        transport=transport, fetch_schema_from_transport=True, execute_timeout=7
+                    ) as session:
+                        query = gql("subscription{liveMeasurement(homeId:\""+ self.HomeID +"\"){power}}")
+                        result = await session.execute(query)
+                        Domoticz.Log(str(query))
+                        self.watt = result["liveMeasurement"]["power"]
+                        Devices[6].Update(0,str(self.watt))
+                except:
+                    WriteDebug("Something went wrong during getting Power from Tibber")
+                    pass
 
-        asyncio.run(main())
+            asyncio.run(main())
 
         if MinuteNow < 59 and self.CurrentPriceUpdated == False:
             if not _plugin.GetDataCurrent.Connected() and not _plugin.GetDataCurrent.Connecting():
@@ -305,9 +314,9 @@ def WriteFile(Parameter,text):
 def CheckInternet():
     WriteDebug("Entered CheckInternet")
     try:
-        WriteDebug("Try ping")
+        WriteDebug("Ping")
         requests.get(url='http://api.tibber.com/', timeout=2)
-        WriteDebug("Ping done")
+        WriteDebug("Internet is OK")
         return True
     except:
         if _plugin.GetDataCurrent.Connected():
