@@ -3,14 +3,15 @@
 # Author: flopp999
 #
 """
-<plugin key="Tibber" name="Tibber API 0.89" author="flopp999" version="0.89" wikilink="https://github.com/flopp999/Tibber/tree/main/Domoticz" externallink="https://tibber.com/se/invite/8af85f51">
+<plugin key="Tibber" name="Tibber API 0.90" author="flopp999" version="0.90" wikilink="https://github.com/flopp999/Tibber-Domoticz" externallink="https://tibber.com/se/invite/8af85f51">
     <description>
         <h2>Tibber API is used to fetch data from Tibber.com</h2><br/>
         <h2>Support me with a coffee &<a href="https://www.buymeacoffee.com/flopp999">https://www.buymeacoffee.com/flopp999</a></h2><br/>
         <h3>Features</h3>
         <ul style="list-style-type:square">
             <li>Fetch current price including taxes, every hour at minute 0</li>
-            <li>Fetch today's mean price including taxes, at midnight</li>
+            <li>Fetch today's minimum, maximum and mean price including taxes, at midnight</li>
+            <li>Fetch current Power(watt) every 10 seconds if you have Tibber Pulse installed</li>
             <li>Possible to get prices including transfering fee</li>
             <li>Debug to file Tibber.log, in plugins/Tibber</li>
         </ul>
@@ -34,12 +35,6 @@
             <options>
                 <option label="öre" value="öre"/>
                 <option label="kr" value="kr" default="true" />
-            </options>
-        </param>
-        <param field="Mode4" label="Tibber pulse?" width="50px">
-            <options>
-                <option label="Yes" value="Yes" />
-                <option label="No" value="No" default="true" />
             </options>
         </param>
         <param field="Mode6" label="Debug to file (Tibber.log)" width="50px">
@@ -94,26 +89,31 @@ class BasePlugin:
     def onStart(self):
         WriteDebug("onStart")
         self.AllSettings = True
+        self.CurrentPriceUpdated = False
+        self.MeanPriceUpdated = False
+        self.MinimumPriceUpdated = False
+        self.MaximumPriceUpdated = False
         self.AccessToken = Parameters["Mode1"]
         self.Unit = Parameters["Mode2"]
         self.Fee = ""
         self.HomeID = ""
-        self.Pulse = Parameters["Mode4"]
+        self.Pulse = "Yes"
         self.headers = {
             'Host': 'api.tibber.com',
             'Authorization': 'Bearer '+self.AccessToken, # Tibber Token
             'Content-Type': 'application/json'
             }
 
-        try:
-            float(Parameters["Mode3"])
-            self.Fee = float(Parameters["Mode3"])
-        except:
-            Domoticz.Log("The Fee is not a number")
-        self.CurrentPriceUpdated = False
-        self.MeanPriceUpdated = False
-        self.MinimumPriceUpdated = False
-        self.MaximumPriceUpdated = False
+        if self.Fee != 0:
+            try:
+                float(Parameters["Mode3"])
+                self.Fee = float(Parameters["Mode3"])
+                WriteFile("Fee",self.Fee)
+            except:
+                Domoticz.Log("The Fee is not a number")
+
+        if self.Fee == 0:
+            self.Fee = CheckFile("Fee")
 
         if len(self.AccessToken) < 43:
             Domoticz.Log("Access Token too short")
@@ -246,11 +246,13 @@ class BasePlugin:
                     ) as session:
                         query = gql("subscription{liveMeasurement(homeId:\""+ self.HomeID +"\"){power}}")
                         result = await session.execute(query)
-                        Domoticz.Log(str(query))
                         self.watt = result["liveMeasurement"]["power"]
                         Devices[6].Update(0,str(self.watt))
+                        self.Pulse = "Yes"
                 except:
+                    Domoticz.Log("Something went wrong during getting Power from Tibber. Is Tibber Pulse installed?")
                     WriteDebug("Something went wrong during getting Power from Tibber")
+                    self.Pulse = "No"
                     pass
 
             asyncio.run(main())
@@ -271,6 +273,25 @@ class BasePlugin:
 
 global _plugin
 _plugin = BasePlugin()
+
+async def main():
+    Domoticz.Log(str(self.HomeID))
+    transport = WebsocketsTransport(url='wss://api.tibber.com/v1-beta/gql/subscriptions', headers={'Authorization': self.AccessToken})
+
+#            try:
+    Domoticz.Log(str(self.HomeID))
+    async with Client(transport=transport, fetch_schema_from_transport=True, execute_timeout=7) as session:
+        query = gql("subscription{liveMeasurement(homeId:\""+ self.HomeID +"\"){power}}")
+        result = await session.execute(query)
+        self.watt = result["liveMeasurement"]["power"]
+        self.Pulse == "Yes"
+#            except:
+        WriteDebug("Something went wrong during getting Power from Tibber")
+#             pass
+
+
+
+
 
 def onStart():
     global _plugin
