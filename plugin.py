@@ -274,25 +274,6 @@ class BasePlugin:
 global _plugin
 _plugin = BasePlugin()
 
-async def main():
-    Domoticz.Log(str(self.HomeID))
-    transport = WebsocketsTransport(url='wss://api.tibber.com/v1-beta/gql/subscriptions', headers={'Authorization': self.AccessToken})
-
-#            try:
-    Domoticz.Log(str(self.HomeID))
-    async with Client(transport=transport, fetch_schema_from_transport=True, execute_timeout=7) as session:
-        query = gql("subscription{liveMeasurement(homeId:\""+ self.HomeID +"\"){power}}")
-        result = await session.execute(query)
-        self.watt = result["liveMeasurement"]["power"]
-        self.Pulse == "Yes"
-#            except:
-        WriteDebug("Something went wrong during getting Power from Tibber")
-#             pass
-
-
-
-
-
 def onStart():
     global _plugin
     _plugin.onStart()
