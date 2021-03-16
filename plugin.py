@@ -215,7 +215,7 @@ class BasePlugin:
                 self.data = Data['Data'].decode('UTF-8')
                 self.data = json.loads(self.data)
                 self.RealTime = self.data["data"]["viewer"]["homes"][0]["features"]["realTimeConsumptionEnabled"]
-                if self.RealTime = False:
+                if self.RealTime == False:
                     Domoticz.Log("No real time consumption device is installed")
                     WriteDebug("No real time consumption device is installed")
                 else:
