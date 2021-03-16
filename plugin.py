@@ -215,8 +215,12 @@ class BasePlugin:
                 self.data = Data['Data'].decode('UTF-8')
                 self.data = json.loads(self.data)
                 self.RealTime = self.data["data"]["viewer"]["homes"][0]["features"]["realTimeConsumptionEnabled"]
-                Domoticz.Log("No real time consumption device is installed")
-                WriteDebug("No real time consumption device is installed")
+                if self.RealTime = False:
+                    Domoticz.Log("No real time consumption device is installed")
+                    WriteDebug("No real time consumption device is installed")
+                else:
+                    Domoticz.Log("Real time consumption device is installed will fetch Power every 10 second")
+                    WriteDebug("Real time consumption device is installed")
                 _plugin.CheckRealTimeConsumption.Disconnect()
 
             if Connection.Name == ("Get MiniMaxMean"):
