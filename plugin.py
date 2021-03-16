@@ -152,6 +152,10 @@ class BasePlugin:
         if not _plugin.GetHomeID.Connected() and not _plugin.GetHomeID.Connecting():
             _plugin.GetHomeID.Connect()
 
+        self.CheckRealTimeConsumption = Domoticz.Connection(Name="Check Real Time Consumption", Transport="TCP/IP", Protocol="HTTPS", Address="api.tibber.com", Port="443")
+        if not _plugin.CheckRealTimeConsumption.Connected() and not _plugin.CheckRealTimeConsumption.Connecting():
+            _plugin.CheckRealTimeConsumption.Connect()
+
     def onConnect(self, Connection, Status, Description):
         if CheckInternet() == True and self.AllSettings == True:
             if (Status == 0):
@@ -164,7 +168,11 @@ class BasePlugin:
                     Connection.Send({'Verb':'POST', 'URL': '/v1-beta/gql', 'Headers': self.headers, 'Data': data})
 
                 if Connection.Name == ("Get HomeID"):
-                    data = '{ "query": "{viewer {homes {id}}}" }' # asking for this hourly price
+                    data = '{ "query": "{viewer {homes {id}}}" }' # asking for HomeID
+                    Connection.Send({'Verb':'POST', 'URL': '/v1-beta/gql', 'Headers': self.headers, 'Data': data})
+
+                if Connection.Name == ("Check Real Time Consumption"):
+                    data = '{ "query": "{viewer {homes {features {realTimeConsumptionEnabled}}}}" }' # asking for HomeID
                     Connection.Send({'Verb':'POST', 'URL': '/v1-beta/gql', 'Headers': self.headers, 'Data': data})
 
     def onMessage(self, Connection, Data):
@@ -203,6 +211,14 @@ class BasePlugin:
                 WriteDebug("HomeID collected")
                 _plugin.GetHomeID.Disconnect()
 
+            if Connection.Name == ("Check Real Time Consumption"):
+                self.data = Data['Data'].decode('UTF-8')
+                self.data = json.loads(self.data)
+                self.RealTime = self.data["data"]["viewer"]["homes"][0]["features"]["realTimeConsumptionEnabled"]
+                Domoticz.Log("No real time consumption device is installed")
+                WriteDebug("No real time consumption device is installed")
+                _plugin.CheckRealTimeConsumption.Disconnect()
+
             if Connection.Name == ("Get MiniMaxMean"):
                 self.data = Data['Data'].decode('UTF-8')
                 self.data = json.loads(self.data)
@@ -235,7 +251,7 @@ class BasePlugin:
         HourNow = (datetime.now().hour)
         MinuteNow = (datetime.now().minute)
 
-        if self.Pulse == "Yes" or self.FirstRun == "Yes":
+        if self.RealTime == True:
             async def main():
                 transport = WebsocketsTransport(
                 url='wss://api.tibber.com/v1-beta/gql/subscriptions',
@@ -249,7 +265,6 @@ class BasePlugin:
                         result = await session.execute(query)
                         self.watt = result["liveMeasurement"]["power"]
                         Devices[6].Update(0,str(self.watt))
-                        self.Pulse = "Yes"
                 except:
                     Domoticz.Log("Could not get a correct reply for Power from Tibber. If Tibber Pulse is installed restart Tibber-hardware")
                     WriteDebug("Something went wrong during getting Power from Tibber")
