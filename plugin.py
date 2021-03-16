@@ -97,7 +97,8 @@ class BasePlugin:
         self.Unit = Parameters["Mode2"]
         self.Fee = ""
         self.HomeID = ""
-        self.Pulse = "Yes"
+        self.Pulse = "No"
+        self.FirstRun = "Yes"
         self.headers = {
             'Host': 'api.tibber.com',
             'Authorization': 'Bearer '+self.AccessToken, # Tibber Token
@@ -122,7 +123,7 @@ class BasePlugin:
         else:
             WriteFile("AccessToken",self.AccessToken)
 
-        if ('tibberprice'  not in Images):
+        if 'tibberprice' not in Images:
             Domoticz.Image('tibberprice.zip').Create()
 
         if len(Devices) < 6:
@@ -234,7 +235,7 @@ class BasePlugin:
         HourNow = (datetime.now().hour)
         MinuteNow = (datetime.now().minute)
 
-        if self.Pulse == "Yes":
+        if self.Pulse == "Yes" or self.FirstRun == "Yes":
             async def main():
                 transport = WebsocketsTransport(
                 url='wss://api.tibber.com/v1-beta/gql/subscriptions',
@@ -250,12 +251,13 @@ class BasePlugin:
                         Devices[6].Update(0,str(self.watt))
                         self.Pulse = "Yes"
                 except:
-                    Domoticz.Log("Something went wrong during getting Power from Tibber. Is Tibber Pulse installed?")
+                    Domoticz.Log("Could not get a correct reply for Power from Tibber. If Tibber Pulse is installed restart Tibber-hardware")
                     WriteDebug("Something went wrong during getting Power from Tibber")
-                    self.Pulse = "No"
                     pass
 
             asyncio.run(main())
+        if self.FirstRun == "Yes":
+            self.FirstRun = "No"
 
         if MinuteNow < 59 and self.CurrentPriceUpdated == False:
             if not _plugin.GetDataCurrent.Connected() and not _plugin.GetDataCurrent.Connecting():
