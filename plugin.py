@@ -51,22 +51,22 @@ import Domoticz
 Package = True
 try:
     import requests, json, os, logging, asyncio
-except ImportError as e:
+except ImportError:
     Package = False
 
 try:
     from logging.handlers import RotatingFileHandler
-except ImportError as e:
+except ImportError:
     Package = False
 
 try:
     from datetime import datetime
-except ImportError as e:
+except ImportError:
     Package = False
 
 try:
     from gql import Client, gql
-except ImportError as e:
+except ImportError:
     Package = False
 
 try:
@@ -121,7 +121,7 @@ class BasePlugin:
             WriteDebug("Access Token too short")
             self.AccessToken = CheckFile("AccessToken")
         else:
-            WriteFile("AccessToken",self.AccessToken)
+            WriteFile("AccessToken", self.AccessToken)
 
         if 'tibberprice' not in Images:
             Domoticz.Image('tibberprice.zip').Create()
