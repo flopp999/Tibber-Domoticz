@@ -242,7 +242,7 @@ class BasePlugin:
                     async with Client(
                         transport=transport, fetch_schema_from_transport=True, execute_timeout=7
                     ) as session:
-                        query = gql("subscription{ liveMeasurement (homeId:\""+ self.HomeID +"\"){power}}")
+                        query = gql("subscription{liveMeasurement(homeId:\""+  self.HomeID  +"\"){power}}")
                         result = await session.execute(query)
                         Domoticz.Log(str(query))
                         self.watt = result["liveMeasurement"]["power"]
