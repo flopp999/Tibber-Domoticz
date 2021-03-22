@@ -85,6 +85,7 @@ logger.setLevel(logging.INFO)
 handler = RotatingFileHandler(dir+'/Tibber.log', maxBytes=50000, backupCount=5)
 logger.addHandler(handler)
 
+
 class BasePlugin:
     enabled = False
 
@@ -122,7 +123,7 @@ class BasePlugin:
         else:
             WriteFile("AccessToken", self.AccessToken)
 
-        if ('tibberprice'  not in Images):
+        if ('tibberprice' not in Images):
             Domoticz.Image('tibberprice.zip').Create()
 
         if len(Devices) < 6:
@@ -136,7 +137,7 @@ class BasePlugin:
             if self.Fee != "" and len(Devices) < 6:
                 Domoticz.Device(Name="Current Price incl. fee", Unit=3, TypeName="Custom", Used=1, Image=ImageID, Options={"Custom": "1;"+Parameters["Mode2"]}).Create()
 
-        if Package == False:
+        if Package is False:
             Domoticz.Log("Missing packages")
 
         self.GetDataCurrent = Domoticz.Connection(Name="Get Current", Transport="TCP/IP", Protocol="HTTPS", Address="api.tibber.com", Port="443")
@@ -152,7 +153,7 @@ class BasePlugin:
             _plugin.GetHomeID.Connect()
 
     def onConnect(self, Connection, Status, Description):
-        if CheckInternet() == True and self.AllSettings == True:
+        if CheckInternet() is True and self.AllSettings is True:
             if (Status == 0):
                 if Connection.Name == ("Get Current"):
                     data = '{ "query": "{viewer {homes {currentSubscription {priceInfo {current {total }}}}}}" }'  # asking for this hourly price
@@ -212,7 +213,7 @@ class BasePlugin:
                     MeanPrice += each["total"]
                 MinimumPrice = min(MiniMaxPrice)
                 MaximumPrice = max(MiniMaxPrice)
-                MeanPrice = round(MeanPrice / 24,3)
+                MeanPrice = round(MeanPrice / 24, 3)
                 if _plugin.Unit == "öre":
                     MinimumPrice = MinimumPrice * 100
                     MaximumPrice = MaximumPrice * 100
@@ -277,16 +278,16 @@ def onStart():
     global _plugin
     _plugin.onStart()
 
-    
+
 def onConnect(Connection, Status, Description):
     global _plugin
     _plugin.onConnect(Connection, Status, Description)
 
-    
+
 def onMessage(Connection, Data):
     _plugin.onMessage(Connection, Data)
 
-    
+
 def CreateFile():
     if not os.path.isfile(dir+'/Tibber.ini'):
         data = {}
@@ -297,6 +298,7 @@ def CreateFile():
         with open(dir+'/Tibber.ini', 'w') as outfile:
             json.dump(data, outfile, indent=4)
 
+
 def CheckFile(Parameter):
     if os.path.isfile(dir+'/Tibber.ini'):
         with open(dir+'/Tibber.ini') as jsonfile:
@@ -306,6 +308,7 @@ def CheckFile(Parameter):
                 _plugin.AllSettings = False
             else:
                 return data
+
 
 def WriteFile(Parameter,text):
     CreateFile()
