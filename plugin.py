@@ -278,7 +278,7 @@ class BasePlugin:
                     async with Client(transport=transport, fetch_schema_from_transport=True, execute_timeout=7) as session:
                         query = gql("subscription{liveMeasurement(homeId:\""+ self.HomeID +"\"){minPower, maxPower, averagePower, accumulatedCost, accumulatedConsumption}}")
                         result = await session.execute(query)
-                         minPower = result["liveMeasurement"]["minPower"]
+                        minPower = result["liveMeasurement"]["minPower"]
                         maxPower = result["liveMeasurement"]["maxPower"]
                         avePower = result["liveMeasurement"]["averagePower"]
                         accCost = result["liveMeasurement"]["accumulatedCost"]
