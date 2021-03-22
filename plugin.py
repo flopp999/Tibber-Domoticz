@@ -53,7 +53,9 @@
 """
 import Domoticz
 from Domoticz import Devices, Parameters, Images
+
 Package = True
+
 try:
     import requests, json, os, logging, asyncio
 except ImportError:
