@@ -163,7 +163,7 @@ class BasePlugin:
 
                 if Connection.Name == ("Get HomeID"):
                     data = '{ "query": "{viewer {homes {id}}}" }'  # asking for HomeID
-                    Connection.Send({'Verb':'POST', 'URL': '/v1-beta/gql', 'Headers': self.headers, 'Data': data})
+                    Connection.Send({'Verb': 'POST', 'URL': '/v1-beta/gql', 'Headers': self.headers, 'Data': data})
 
                 if Connection.Name == ("Check Real Time Consumption"):
                     data = '{ "query": "{viewer {homes {features {realTimeConsumptionEnabled}}}}" }'  # asking for HomeID
@@ -253,6 +253,7 @@ class BasePlugin:
 
         if self.RealTime is True:
             WriteDebug("onHeartbeatLivePower")
+            
             async def LivePower():
                 transport = WebsocketsTransport(url='wss://api.tibber.com/v1-beta/gql/subscriptions', headers={'Authorization': self.AccessToken})
                 try:
@@ -276,7 +277,7 @@ class BasePlugin:
                 transport = WebsocketsTransport(url='wss://api.tibber.com/v1-beta/gql/subscriptions', headers={'Authorization': self.AccessToken})
                 try:
                     async with Client(transport=transport, fetch_schema_from_transport=True, execute_timeout=7) as session:
-                        query = gql("subscription{liveMeasurement(homeId:\""+ self.HomeID +"\"){minPower, maxPower, averagePower, accumulatedCost, accumulatedConsumption}}")
+                        query = gql("subscription{liveMeasurement(homeId:\"" + self.HomeID + "\"){minPower, maxPower, averagePower, accumulatedCost, accumulatedConsumption}}")
                         result = await session.execute(query)
                         minPower = result["liveMeasurement"]["minPower"]
                         maxPower = result["liveMeasurement"]["maxPower"]
@@ -295,8 +296,8 @@ class BasePlugin:
 
             asyncio.run(LiveData())
 
-        if MinuteNow == 59 and self.LiveDataUpdated == True:
-             self.LiveDataUpdated = False
+        if MinuteNow == 59 and self.LiveDataUpdated is True:
+            self.LiveDataUpdated = False
 
         if MinuteNow < 59 and self.CurrentPriceUpdated is False:
             if not _plugin.GetDataCurrent.Connected() and not _plugin.GetDataCurrent.Connecting():
