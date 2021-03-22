@@ -9,11 +9,11 @@
         <h2>Support me with a coffee &<a href="https://www.buymeacoffee.com/flopp999">https://www.buymeacoffee.com/flopp999</a></h2><br/>
         <h3>Features</h3>
         <ul style="list-style-type:square">
-            <li>Fetch current price including taxes, every hour at minute 0</li>
-            <li>Fetch today's minimum, maximum and mean price including taxes, at midnight</li>
+            <li>Fetch current price including taxes, minimum power, maximum power, average power, accumulated cost and accumulated consumption, this will happen every hour at minute 0</li>
+            <li>Fetch today's minimum, maximum and mean price including taxes, this will happen 10 minutes past midnight</li>
             <li>Fetch current Power(watt) every 10 seconds if you have Tibber Pulse installed</li>
             <li>Possible to get prices including transfering fee</li>
-            <li>Debug to file Tibber.log, in plugins/Tibber</li>
+            <li>Debug to file ../plugins/Tibber/Tibber.log</li>
         </ul>
         <h3>Devices</h3>
         <ul style="list-style-type:square">
