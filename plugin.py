@@ -164,7 +164,7 @@ class BasePlugin:
                     Connection.Send({'Verb': 'POST', 'URL': '/v1-beta/gql', 'Headers': self.headers, 'Data': data})
 
                 if Connection.Name == ("Get HomeID"):
-                    data = '{ "query": "{viewer {homes {id}}}" }' # asking for this hourly price
+                    data = '{ "query": "{viewer {homes {id}}}" }'  # asking for this hourly price
                     Connection.Send({'Verb': 'POST', 'URL': '/v1-beta/gql', 'Headers': self.headers, 'Data': data})
 
     def onMessage(self, Connection, Data):
@@ -237,15 +237,12 @@ class BasePlugin:
 
         if self.Pulse == "Yes":
             async def main():
-                transport = WebsocketsTransport(
-                url='wss://api.tibber.com/v1-beta/gql/subscriptions',
-                headers={'Authorization': self.AccessToken}
-                )
+                transport = WebsocketsTransport(url='wss://api.tibber.com/v1-beta/gql/subscriptions', headers={'Authorization': self.AccessToken})
                 try:
                     async with Client(
                         transport=transport, fetch_schema_from_transport=True, execute_timeout=7
                     ) as session:
-                        query = gql("subscription{liveMeasurement(homeId:\""+ self.HomeID +"\"){power}}")
+                        query = gql("subscription{ liveMeasurement (homeId:\""+ self.HomeID +"\"){power}}")
                         result = await session.execute(query)
                         Domoticz.Log(str(query))
                         self.watt = result["liveMeasurement"]["power"]
@@ -256,18 +253,18 @@ class BasePlugin:
 
             asyncio.run(main())
 
-        if MinuteNow < 59 and self.CurrentPriceUpdated == False:
+        if MinuteNow < 59 and self.CurrentPriceUpdated is False:
             if not _plugin.GetDataCurrent.Connected() and not _plugin.GetDataCurrent.Connecting():
                 WriteDebug("onHeartbeatGetDataCurrent")
                 _plugin.GetDataCurrent.Connect()
-        if MinuteNow == 59 and self.CurrentPriceUpdated == True:
+        if MinuteNow == 59 and self.CurrentPriceUpdated is True:
             self.CurrentPriceUpdated = False
 
-        if HourNow >= 0 and MinuteNow >= 10 and MinuteNow < 59 and self.MiniMaxMeanPriceUpdated == False:
+        if HourNow >= 0 and MinuteNow >= 10 and MinuteNow < 59 and self.MiniMaxMeanPriceUpdated is False:
             if not _plugin.GetDataMiniMaxMean.Connected() and not _plugin.GetDataMiniMaxMean.Connecting():
                 WriteDebug("onHeartbeatGetDataMiniMaxMean")
                 _plugin.GetDataMiniMaxMean.Connect()
-        if HourNow == 23 and MinuteNow == 59 and self.MiniMaxMeanPriceUpdated == True:
+        if HourNow is 23 and MinuteNow is 59 and self.MiniMaxMeanPriceUpdated is True:
             self.MiniMaxMeanPriceUpdated = False
 
 global _plugin
@@ -310,7 +307,7 @@ def CheckFile(Parameter):
                 return data
 
 
-def WriteFile(Parameter,text):
+def WriteFile(Parameter, text):
     CreateFile()
     with open(dir+'/Tibber.ini') as jsonfile:
         data = json.load(jsonfile)
@@ -318,7 +315,7 @@ def WriteFile(Parameter,text):
     with open(dir+'/Tibber.ini', 'w') as outfile:
         json.dump(data, outfile, indent=4)
 
-        
+
 def CheckInternet():
     WriteDebug("Entered CheckInternet")
     try:
@@ -334,13 +331,13 @@ def CheckInternet():
         WriteDebug("Internet is not available")
         return False
 
-    
+ 
 def WriteDebug(text):
     if Parameters["Mode6"] == "Yes":
         timenow = (datetime.now())
         logger.info(str(timenow)+" "+text)
 
-        
+
 def onHeartbeat():
     global _plugin
     _plugin.onHeartbeat()
