@@ -52,7 +52,7 @@
 </plugin>
 """
 import Domoticz
-
+from Domoticz import Devices, Parameters
 Package = True
 try:
     import requests, json, os, logging, asyncio
