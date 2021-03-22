@@ -55,28 +55,28 @@ import Domoticz
 from Domoticz import Devices, Parameters, Images
 Package = True
 try:
-     import requests, json, os, logging, asyncio
-except ImportError as e:
+    import requests, json, os, logging, asyncio
+except ImportError:
     Package = False
 
 try:
     from logging.handlers import RotatingFileHandler
-except ImportError as e:
+except ImportError:
     Package = False
 
 try:
     from datetime import datetime
-except ImportError as e:
+except ImportError:
     Package = False
 
 try:
     from gql import Client, gql
-except ImportError as e:
+except ImportError:
     Package = False
 
 try:
     from gql.transport.websockets import WebsocketsTransport
-except ImportError as e:
+except ImportError:
     Package = False
 
 dir = os.path.dirname(os.path.realpath(__file__))
@@ -101,7 +101,7 @@ class BasePlugin:
         self.Pulse = Parameters["Mode4"]
         self.headers = {
             'Host': 'api.tibber.com',
-            'Authorization': 'Bearer '+self.AccessToken, # Tibber Token
+            'Authorization': 'Bearer '+self.AccessToken,  # Tibber Token
             'Content-Type': 'application/json'
             }
 
@@ -120,7 +120,7 @@ class BasePlugin:
             WriteDebug("Access Token too short")
             self.AccessToken = CheckFile("AccessToken")
         else:
-            WriteFile("AccessToken",self.AccessToken)
+            WriteFile("AccessToken", self.AccessToken)
 
         if ('tibberprice'  not in Images):
             Domoticz.Image('tibberprice.zip').Create()
@@ -155,16 +155,16 @@ class BasePlugin:
         if CheckInternet() == True and self.AllSettings == True:
             if (Status == 0):
                 if Connection.Name == ("Get Current"):
-                    data = '{ "query": "{viewer {homes {currentSubscription {priceInfo {current {total }}}}}}" }' # asking for this hourly price
-                    Connection.Send({'Verb':'POST', 'URL': '/v1-beta/gql', 'Headers': self.headers, 'Data': data})
+                    data = '{ "query": "{viewer {homes {currentSubscription {priceInfo {current {total }}}}}}" }'  # asking for this hourly price
+                    Connection.Send({'Verb': 'POST', 'URL': '/v1-beta/gql', 'Headers': self.headers, 'Data': data})
 
                 if Connection.Name == ("Get MiniMaxMean"):
-                    data = '{ "query": "{viewer {homes {currentSubscription {priceInfo {today {total }}}}}}" }' # asking for this hourly price
-                    Connection.Send({'Verb':'POST', 'URL': '/v1-beta/gql', 'Headers': self.headers, 'Data': data})
+                    data = '{ "query": "{viewer {homes {currentSubscription {priceInfo {today {total }}}}}}" }'  # asking for this hourly price
+                    Connection.Send({'Verb': 'POST', 'URL': '/v1-beta/gql', 'Headers': self.headers, 'Data': data})
 
                 if Connection.Name == ("Get HomeID"):
                     data = '{ "query": "{viewer {homes {id}}}" }' # asking for this hourly price
-                    Connection.Send({'Verb':'POST', 'URL': '/v1-beta/gql', 'Headers': self.headers, 'Data': data})
+                    Connection.Send({'Verb': 'POST', 'URL': '/v1-beta/gql', 'Headers': self.headers, 'Data': data})
 
     def onMessage(self, Connection, Data):
         Status = int(Data["Status"])
@@ -180,15 +180,15 @@ class BasePlugin:
             if Connection.Name == ("Get Current"):
                 self.data = Data['Data'].decode('UTF-8')
                 self.data = json.loads(self.data)
-                CurrentPrice = round(self.data["data"]["viewer"]["homes"][0]["currentSubscription"]["priceInfo"]["current"]["total"],3)
+                CurrentPrice = round(self.data["data"]["viewer"]["homes"][0]["currentSubscription"]["priceInfo"]["current"]["total"], 3)
                 if _plugin.Unit == "öre":
                     CurrentPrice = CurrentPrice * 100
-                Devices[1].Update(0,str(round(CurrentPrice,1)))
+                Devices[1].Update(0, str(round(CurrentPrice, 1)))
                 if self.Fee != "":
                     if _plugin.Unit == "öre":
-                        Devices[3].Update(0,str(round(CurrentPrice+self.Fee,1)))
+                        Devices[3].Update(0, str(round(CurrentPrice+self.Fee, 1)))
                     else:
-                        Devices[3].Update(0,str(round(CurrentPrice+(self.Fee/100),1)))
+                        Devices[3].Update(0, str(round(CurrentPrice+(self.Fee/100), 1)))
                 WriteDebug("Current Price Updated")
                 Domoticz.Log("Current Price Updated")
                 self.CurrentPriceUpdated = True
@@ -217,9 +217,9 @@ class BasePlugin:
                     MinimumPrice = MinimumPrice * 100
                     MaximumPrice = MaximumPrice * 100
                     MeanPrice = MeanPrice * 100
-                Devices[2].Update(0,str(MeanPrice))
-                Devices[4].Update(0,str(round(MinimumPrice,1)))
-                Devices[5].Update(0,str(round(MaximumPrice,1)))
+                Devices[2].Update(0, str(MeanPrice))
+                Devices[4].Update(0, str(round(MinimumPrice, 1)))
+                Devices[5].Update(0, str(round(MaximumPrice, 1)))
                 self.MiniMaxMeanPriceUpdated = True
                 WriteDebug("Minimum Price Updated")
                 WriteDebug("Maximum Price Updated")
@@ -248,7 +248,7 @@ class BasePlugin:
                         result = await session.execute(query)
                         Domoticz.Log(str(query))
                         self.watt = result["liveMeasurement"]["power"]
-                        Devices[6].Update(0,str(self.watt))
+                        Devices[6].Update(0, str(self.watt))
                 except:
                     WriteDebug("Something went wrong during getting Power from Tibber")
                     pass
@@ -272,17 +272,21 @@ class BasePlugin:
 global _plugin
 _plugin = BasePlugin()
 
+
 def onStart():
     global _plugin
     _plugin.onStart()
 
+    
 def onConnect(Connection, Status, Description):
     global _plugin
     _plugin.onConnect(Connection, Status, Description)
 
+    
 def onMessage(Connection, Data):
     _plugin.onMessage(Connection, Data)
 
+    
 def CreateFile():
     if not os.path.isfile(dir+'/Tibber.ini'):
         data = {}
@@ -311,6 +315,7 @@ def WriteFile(Parameter,text):
     with open(dir+'/Tibber.ini', 'w') as outfile:
         json.dump(data, outfile, indent=4)
 
+        
 def CheckInternet():
     WriteDebug("Entered CheckInternet")
     try:
@@ -326,11 +331,13 @@ def CheckInternet():
         WriteDebug("Internet is not available")
         return False
 
+    
 def WriteDebug(text):
     if Parameters["Mode6"] == "Yes":
         timenow = (datetime.now())
         logger.info(str(timenow)+" "+text)
 
+        
 def onHeartbeat():
     global _plugin
     _plugin.onHeartbeat()
@@ -339,7 +346,7 @@ def onHeartbeat():
 def DumpConfigToLog():
     for x in Parameters:
         if Parameters[x] != "":
-            Domoticz.Debug( "'" + x + "':'" + str(Parameters[x]) + "'")
+            Domoticz.Debug("'" + x + "':'" + str(Parameters[x]) + "'")
     Domoticz.Debug("Device count: " + str(len(Devices)))
     for x in Devices:
         Domoticz.Debug("Device:           " + str(x) + " - " + str(Devices[x]))
