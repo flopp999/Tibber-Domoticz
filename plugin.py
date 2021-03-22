@@ -242,7 +242,7 @@ class BasePlugin:
                     async with Client(
                         transport=transport, fetch_schema_from_transport=True, execute_timeout=7
                     ) as session:
-                        query = gql("subscription{liveMeasurement(homeId:\""+  self.HomeID  +"\"){power}}")
+                        query = gql("subscription{liveMeasurement(homeId:\"" + self.HomeID + "\"){power}}")
                         result = await session.execute(query)
                         Domoticz.Log(str(query))
                         self.watt = result["liveMeasurement"]["power"]
@@ -266,6 +266,7 @@ class BasePlugin:
                 _plugin.GetDataMiniMaxMean.Connect()
         if HourNow == 23 and MinuteNow == 59 and self.MiniMaxMeanPriceUpdated is True:
             self.MiniMaxMeanPriceUpdated = False
+
 
 global _plugin
 _plugin = BasePlugin()
@@ -331,7 +332,7 @@ def CheckInternet():
         WriteDebug("Internet is not available")
         return False
 
- 
+
 def WriteDebug(text):
     if Parameters["Mode6"] == "Yes":
         timenow = (datetime.now())
@@ -342,7 +343,8 @@ def onHeartbeat():
     global _plugin
     _plugin.onHeartbeat()
 
-    # Generic helper functions
+
+# Generic helper functions
 def DumpConfigToLog():
     for x in Parameters:
         if Parameters[x] != "":
