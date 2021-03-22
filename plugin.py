@@ -112,7 +112,7 @@ class BasePlugin:
             try:
                 float(Parameters["Mode3"])
                 self.Fee = float(Parameters["Mode3"])
-                WriteFile("Fee",self.Fee)
+                WriteFile("Fee", self.Fee)
             except:
                 Domoticz.Log("The Fee is not a number")
 
@@ -162,13 +162,12 @@ class BasePlugin:
                     Connection.Send({'Verb': 'POST', 'URL': '/v1-beta/gql', 'Headers': self.headers, 'Data': data})
 
                 if Connection.Name == ("Get HomeID"):
-                    data = '{ "query": "{viewer {homes {id}}}" }' # asking for HomeID
+                    data = '{ "query": "{viewer {homes {id}}}" }'  # asking for HomeID
                     Connection.Send({'Verb':'POST', 'URL': '/v1-beta/gql', 'Headers': self.headers, 'Data': data})
 
                 if Connection.Name == ("Check Real Time Consumption"):
-                    data = '{ "query": "{viewer {homes {features {realTimeConsumptionEnabled}}}}" }' # asking for HomeID
-                    Connection.Send({'Verb':'POST', 'URL': '/v1-beta/gql', 'Headers': self.headers, 'Data': data})
-
+                    data = '{ "query": "{viewer {homes {features {realTimeConsumptionEnabled}}}}" }'  # asking for HomeID
+                    Connection.Send({'Verb': 'POST', 'URL': '/v1-beta/gql', 'Headers': self.headers, 'Data': data})
 
     def onMessage(self, Connection, Data):
         Status = int(Data["Status"])
@@ -188,12 +187,12 @@ class BasePlugin:
                 if _plugin.Unit == "öre":
                     CurrentPrice = CurrentPrice * 100
 
-                UpdateDevice(1, 0, str(round(CurrentPrice,1)), self.Unit, "Current Price")
+                UpdateDevice(1, 0, str(round(CurrentPrice, 1)), self.Unit, "Current Price")
                 if self.Fee != "":
                     if _plugin.Unit == "öre":
-                        UpdateDevice(3, 0, str(round(CurrentPrice+self.Fee,1)), self.Unit, "Current Price incl. fee")
+                        UpdateDevice(3, 0, str(round(CurrentPrice+self.Fee, 1)), self.Unit, "Current Price incl. fee")
                     else:
-                        UpdateDevice(3, 0, str(round(CurrentPrice+(self.Fee/100),1)), self.Unit, "Current Price incl. fee")
+                        UpdateDevice(3, 0, str(round(CurrentPrice+(self.Fee/100), 1)), self.Unit, "Current Price incl. fee")
 
                 WriteDebug("Current Price Updated")
                 Domoticz.Log("Current Price Updated")
@@ -212,7 +211,7 @@ class BasePlugin:
                 self.data = Data['Data'].decode('UTF-8')
                 self.data = json.loads(self.data)
                 self.RealTime = self.data["data"]["viewer"]["homes"][0]["features"]["realTimeConsumptionEnabled"]
-                if self.RealTime == False:
+                if self.RealTime is False:
                     Domoticz.Log("No real time consumption device is installed")
                     WriteDebug("No real time consumption device is installed")
                 else:
@@ -236,8 +235,8 @@ class BasePlugin:
                     MaximumPrice = MaximumPrice * 100
                     MeanPrice = MeanPrice * 100
                 UpdateDevice(2, 0, str(MeanPrice), self.Unit, "Mean Price")
-                UpdateDevice(4, 0, str(round(MinimumPrice,1)), self.Unit, "Minimum Price")
-                UpdateDevice(5, 0, str(round(MaximumPrice,1)), self.Unit, "Maximum Price")
+                UpdateDevice(4, 0, str(round(MinimumPrice, 1)), self.Unit, "Minimum Price")
+                UpdateDevice(5, 0, str(round(MaximumPrice, 1)), self.Unit, "Maximum Price")
                 self.MiniMaxMeanPriceUpdated = True
                 WriteDebug("Minimum Price Updated")
                 WriteDebug("Maximum Price Updated")
@@ -252,14 +251,10 @@ class BasePlugin:
         HourNow = (datetime.now().hour)
         MinuteNow = (datetime.now().minute)
 
-        if self.RealTime == True:
+        if self.RealTime is True:
             WriteDebug("onHeartbeatLivePower")
             async def LivePower():
-                transport = WebsocketsTransport(
-                url='wss://api.tibber.com/v1-beta/gql/subscriptions',
-                headers={'Authorization': self.AccessToken}
-                )
-
+                transport = WebsocketsTransport(url='wss://api.tibber.com/v1-beta/gql/subscriptions', headers={'Authorization': self.AccessToken})
                 try:
                     async with Client(
                         transport=transport, fetch_schema_from_transport=True, execute_timeout=7
@@ -268,33 +263,32 @@ class BasePlugin:
                         result = await session.execute(query)
                         self.watt = result["liveMeasurement"]["power"]
                         UpdateDevice(6, 0, str(self.watt), "watt", "Watt")
-
                 except:
                     WriteDebug("Something went wrong during getting Power from Tibber")
                     pass
 
             asyncio.run(LivePower())
 
-        if MinuteNow < 59 and self.LiveDataUpdated == False and self.RealTime == True:
+        if MinuteNow < 59 and self.LiveDataUpdated is False and self.RealTime is True:
             WriteDebug("onHeartbeatLiveData")
 
             async def LiveData():
                 transport = WebsocketsTransport(url='wss://api.tibber.com/v1-beta/gql/subscriptions', headers={'Authorization': self.AccessToken})
                 try:
                     async with Client(transport=transport, fetch_schema_from_transport=True, execute_timeout=7) as session:
-                         query = gql("subscription{liveMeasurement(homeId:\""+ self.HomeID +"\"){minPower, maxPower, averagePower, accumulatedCost, accumulatedConsumption}}")
-                         result = await session.execute(query)
+                        query = gql("subscription{liveMeasurement(homeId:\""+ self.HomeID +"\"){minPower, maxPower, averagePower, accumulatedCost, accumulatedConsumption}}")
+                        result = await session.execute(query)
                          minPower = result["liveMeasurement"]["minPower"]
-                         maxPower = result["liveMeasurement"]["maxPower"]
-                         avePower = result["liveMeasurement"]["averagePower"]
-                         accCost = result["liveMeasurement"]["accumulatedCost"]
-                         accCons = result["liveMeasurement"]["accumulatedConsumption"]
-                         UpdateDevice(7, 0, str(minPower), "watt", "Minimum Power")
-                         UpdateDevice(8, 0, str(maxPower), "watt", "Maximum Power")
-                         UpdateDevice(9, 0, str(round(avePower,0)), "watt", "Average Power")
-                         UpdateDevice(10, 0, str(round(accCost,1)), "kr", "Accumulated Cost")
-                         UpdateDevice(11, 0, str(round(accCons,1)), "kWh", "Accumulated Consumption")
-                         self.LiveDataUpdated = True
+                        maxPower = result["liveMeasurement"]["maxPower"]
+                        avePower = result["liveMeasurement"]["averagePower"]
+                        accCost = result["liveMeasurement"]["accumulatedCost"]
+                        accCons = result["liveMeasurement"]["accumulatedConsumption"]
+                        UpdateDevice(7, 0, str(minPower), "watt", "Minimum Power")
+                        UpdateDevice(8, 0, str(maxPower), "watt", "Maximum Power")
+                        UpdateDevice(9, 0, str(round(avePower, 0)), "watt", "Average Power")
+                        UpdateDevice(10, 0, str(round(accCost, 1)), "kr", "Accumulated Cost")
+                        UpdateDevice(11, 0, str(round(accCons, 1)), "kWh", "Accumulated Consumption")
+                        self.LiveDataUpdated = True
                 except:
                     WriteDebug("Something went wrong during getting Power from Tibber")
                     pass
@@ -321,6 +315,7 @@ class BasePlugin:
 
 global _plugin
 _plugin = BasePlugin()
+
 
 def UpdateDevice(ID, nValue, sValue, unit, Name):
     if (ID in Devices):
