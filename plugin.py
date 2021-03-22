@@ -264,7 +264,7 @@ class BasePlugin:
             if not _plugin.GetDataMiniMaxMean.Connected() and not _plugin.GetDataMiniMaxMean.Connecting():
                 WriteDebug("onHeartbeatGetDataMiniMaxMean")
                 _plugin.GetDataMiniMaxMean.Connect()
-        if HourNow is 23 and MinuteNow is 59 and self.MiniMaxMeanPriceUpdated is True:
+        if HourNow == 23 and MinuteNow == 59 and self.MiniMaxMeanPriceUpdated is True:
             self.MiniMaxMeanPriceUpdated = False
 
 global _plugin
