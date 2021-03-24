@@ -30,6 +30,7 @@
     </description>
     <params>
         <param field="Mode1" label="Tibber Access Token" width="460px" required="true" default="d1007ead2dc84a2b82f0de19451c5fb22112f7ae11d19bf2bedb224a003ff74a"/>
+        <param field="Mode4" label="House ID" width="50px" required="false" default="If empty House ID will be shown in Domoticz Log"/>
         <param field="Mode3" label="Transfer fee(öre)" width="50px" required="false" default="0"/>
         <param field="Mode2" label="Unit for devices" width="50px">
             <options>
@@ -97,6 +98,7 @@ class BasePlugin:
         self.MinimumPriceUpdated = False
         self.MaximumPriceUpdated = False
         self.AccessToken = Parameters["Mode1"]
+        self.HouseID = Parameters["Mode4"]
         self.Unit = Parameters["Mode2"]
         self.Fee = ""
         self.HomeID = ""
@@ -124,6 +126,13 @@ class BasePlugin:
             self.AccessToken = CheckFile("AccessToken")
         else:
             WriteFile("AccessToken", self.AccessToken)
+            
+        if len(self.HouseID) != 37:
+            Domoticz.Log("House ID is not correct")
+            WriteDebug("House ID not correct")
+            self.HouseID = CheckFile("HouseID")
+        else:
+            WriteFile("HouseID", self.HouseID)
 
         if 'tibberprice' not in Images:
             Domoticz.Image('tibberprice.zip').Create()
