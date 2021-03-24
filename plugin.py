@@ -202,7 +202,8 @@ class BasePlugin:
             if Connection.Name == ("Get HomeID"):
                 self.data = Data['Data'].decode('UTF-8')
                 self.data = json.loads(self.data)
-                self.HomeID = self.data["data"]["viewer"]["homes"][0]["id"]
+                for each in self.HomeID = self.data["data"]["viewer"]["homes"]:
+                    Domoticz.Log(str(each))
                 Domoticz.Log("HomeID collected")
                 WriteDebug("HomeID collected")
                 _plugin.GetHomeID.Disconnect()
