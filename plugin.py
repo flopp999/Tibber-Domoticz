@@ -47,7 +47,6 @@
 </plugin>
 """
 import Domoticz
-from Domoticz import Devices, Parameters, Images
 
 Package = True
 
