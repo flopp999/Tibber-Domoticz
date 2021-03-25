@@ -52,7 +52,7 @@ import Domoticz
 Package = True
 
 try:
-    import requests, json, os, logging, asyncio
+    import requests, json, os, logging, asyncio, sys
 except ImportError:
     Package = False
 
@@ -110,7 +110,7 @@ class BasePlugin:
         self.LiveDataUpdated = False
         self.AccessToken = Parameters["Mode1"]
         self.Unit = Parameters["Mode2"]
-        self.HomeID = Parameters["Mode4"]
+        self.HomeID = [Parameters["Mode4"]]
         self.Fee = ""
         self.Pulse = "No"
 
@@ -138,7 +138,7 @@ class BasePlugin:
         else:
             WriteFile("AccessToken", self.AccessToken)
 
-        if len(self.HomeID) is not 37:  # will get Home ID from server
+        if len(self.HomeID[0]) is not 36:  # will get Home ID from server
             self.HomeID = []
             Domoticz.Log("Home ID is not correct")
             WriteDebug("Home ID not correct")
@@ -164,7 +164,8 @@ class BasePlugin:
             _plugin.GetDataMiniMaxMean.Connect()
 
         self.GetHomeID = Domoticz.Connection(Name="Get HomeID", Transport="TCP/IP", Protocol="HTTPS", Address="api.tibber.com", Port="443")
-        if not _plugin.GetHomeID.Connected() and not _plugin.GetHomeID.Connecting():
+        if not _plugin.GetHomeID.Connected() and not _plugin.GetHomeID.Connecting() and self.HomeID == []:
+            Domoticz.Log("Home")
             _plugin.GetHomeID.Connect()
 
         self.CheckRealTimeHardware = Domoticz.Connection(Name="Check Real Time Hardware", Transport="TCP/IP", Protocol="HTTPS", Address="api.tibber.com", Port="443")
@@ -278,10 +279,14 @@ class BasePlugin:
                     async with Client(transport=transport, fetch_schema_from_transport=True, execute_timeout=7) as session:
                         query = gql("subscription{liveMeasurement(homeId:\"" + self.HomeID[0] + "\"){power}}")
                         result = await session.execute(query)
+                        Domoticz.Log(str(result))
                         self.watt = result["liveMeasurement"]["power"]
                         UpdateDevice(6, 0, str(self.watt), "watt", "Watt")
-                except:
-                    WriteDebug("Something went wrong during getting Power from Tibber")
+                except Exception as e:
+                    Domoticz.Error("Something went wrong during fetching Live Data from Tibber")
+                    WriteDebug("Something went wrong during fetching Live Data Power from Tibber")
+                    WriteDebug(str(e))
+                    self.RealTime = False
                     pass
 
             asyncio.run(LivePower())
@@ -306,8 +311,9 @@ class BasePlugin:
                         UpdateDevice(10, 0, str(round(accCost, 1)), "kr", "Accumulated Cost")
                         UpdateDevice(11, 0, str(round(accCons, 1)), "kWh", "Accumulated Consumption")
                         self.LiveDataUpdated = True
-                except:
-                    WriteDebug("Something went wrong during getting Power from Tibber")
+                except Exception as e:
+                    WriteDebug("Something went wrong during fetching Live Data from Tibber")
+                    WriteDebug(str(e))
                     pass
 
             asyncio.run(LiveData())
