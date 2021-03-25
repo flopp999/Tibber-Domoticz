@@ -1,3 +1,4 @@
 DateTime>=4.3
 requests>=2.23.0
-gql>==3.0.0a5
+gql>=3.0.0a5
+asyncio>=3.4.3
