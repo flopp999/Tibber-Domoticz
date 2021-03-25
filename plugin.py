@@ -3,7 +3,7 @@
 # Author: flopp999
 #
 """
-<plugin key="TibberDev" name="Tibber API 0.91" author="flopp999" version="0.91" wikilink="https://github.com/flopp999/Tibber-Domoticz" externallink="https://tibber.com/se/invite/8af85f51">
+<plugin key="TibberDev" name="TibberDev API 0.91" author="flopp999" version="0.91" wikilink="https://github.com/flopp999/Tibber-Domoticz" externallink="https://tibber.com/se/invite/8af85f51">
     <description>
         <h2>Tibber API is used to fetch data from Tibber.com</h2><br/>
         <h2>Support me with a coffee &<a href="https://www.buymeacoffee.com/flopp999">https://www.buymeacoffee.com/flopp999</a></h2><br/>
@@ -30,7 +30,7 @@
     </description>
     <params>
         <param field="Mode1" label="Tibber Access Token" width="460px" required="true" default="d1007ead2dc84a2b82f0de19451c5fb22112f7ae11d19bf2bedb224a003ff74a"/>
-        <param field="Mode4" label="House ID" width="50px" required="false" default="If empty House ID will be shown in Domoticz Log"/>
+        <param field="Mode4" label="House ID" width="350px" required="false" default="Copy from Domoticz Log or Tibber Develop webpage"/>
         <param field="Mode3" label="Transfer fee(öre)" width="50px" required="false" default="0"/>
         <param field="Mode2" label="Unit for devices" width="50px">
             <options>
@@ -126,16 +126,16 @@ class BasePlugin:
             self.AccessToken = CheckFile("AccessToken")
         else:
             WriteFile("AccessToken", self.AccessToken)
-            
-        if len(self.HouseID) != 37:
-            Domoticz.Log("House ID is not correct")
-            WriteDebug("House ID not correct")
-            self.HouseID = CheckFile("HouseID")
-        else:
-            WriteFile("HouseID", self.HouseID)
 
-        if 'tibberprice' not in Images:
-            Domoticz.Image('tibberprice.zip').Create()
+#        if len(self.HouseID) is not 37:
+#            Domoticz.Log("House ID is not correct")
+#            WriteDebug("House ID not correct")
+#            self.HouseID = CheckFile("HouseID")
+#        else:
+#            WriteFile("HouseID", self.HouseID)
+
+        if "tibberprice" not in Images:
+            Domoticz.Image("tibberprice.zip").Create()
 
         self.ImageID = Images["tibberprice"].ID
 
@@ -179,25 +179,18 @@ class BasePlugin:
 
     def onMessage(self, Connection, Data):
         Status = int(Data["Status"])
-
-        if (Status == 400):
-            Domoticz.Error(str("Something went wrong"))
-            if _plugin.GetDataCurrent.Connected():
-                _plugin.GetDataCurrent.Disconnect()
-            if _plugin.GetDataMiniMaxMean.Connected():
-                _plugin.GetDataMiniMaxMean.Disconnect()
+        Data = Data['Data'].decode('UTF-8')
+        Data = json.loads(Data)
 
         if (Status == 200):
             if Connection.Name == ("Get Current"):
-                self.data = Data['Data'].decode('UTF-8')
-                self.data = json.loads(self.data)
-                CurrentPrice = round(self.data["data"]["viewer"]["homes"][0]["currentSubscription"]["priceInfo"]["current"]["total"], 3)
+                CurrentPrice = round(Data["data"]["viewer"]["homes"][0]["currentSubscription"]["priceInfo"]["current"]["total"], 3)
                 if _plugin.Unit == "öre":
                     CurrentPrice = CurrentPrice * 100
 
                 UpdateDevice(1, 0, str(round(CurrentPrice, 1)), self.Unit, "Current Price")
                 if self.Fee != "":
-                    if _plugin.Unit == "öre":
+                    if self.Unit == "öre":
                         UpdateDevice(3, 0, str(round(CurrentPrice+self.Fee, 1)), self.Unit, "Current Price incl. fee")
                     else:
                         UpdateDevice(3, 0, str(round(CurrentPrice+(self.Fee/100), 1)), self.Unit, "Current Price incl. fee")
@@ -208,18 +201,15 @@ class BasePlugin:
                 _plugin.GetDataCurrent.Disconnect()
 
             if Connection.Name == ("Get HomeID"):
-                self.data = Data['Data'].decode('UTF-8')
-                self.data = json.loads(self.data)
-                for each in self.data["data"]["viewer"]["homes"]:
-                    Domoticz.Log(str(each))
+                for each in Data["data"]["viewer"]["homes"]:
+                    self.HomeID = each["id"]
+                    Domoticz.Log(str(self.HomeID))
                 Domoticz.Log("HomeID collected")
                 WriteDebug("HomeID collected")
                 _plugin.GetHomeID.Disconnect()
 
             if Connection.Name == ("Check Real Time Consumption"):
-                self.data = Data['Data'].decode('UTF-8')
-                self.data = json.loads(self.data)
-                self.RealTime = self.data["data"]["viewer"]["homes"][0]["features"]["realTimeConsumptionEnabled"]
+                self.RealTime = Data["data"]["viewer"]["homes"][0]["features"]["realTimeConsumptionEnabled"]
                 if self.RealTime is False:
                     Domoticz.Log("No real time consumption device is installed")
                     WriteDebug("No real time consumption device is installed")
@@ -229,11 +219,9 @@ class BasePlugin:
                 _plugin.CheckRealTimeConsumption.Disconnect()
 
             if Connection.Name == ("Get MiniMaxMean"):
-                self.data = Data['Data'].decode('UTF-8')
-                self.data = json.loads(self.data)
                 MiniMaxPrice = []
                 MeanPrice = float(0)
-                for each in self.data["data"]["viewer"]["homes"][0]["currentSubscription"]["priceInfo"]["today"]:
+                for each in Data["data"]["viewer"]["homes"][0]["currentSubscription"]["priceInfo"]["today"]:
                     MiniMaxPrice.append(each["total"])
                     MeanPrice += each["total"]
                 MinimumPrice = min(MiniMaxPrice)
@@ -255,6 +243,15 @@ class BasePlugin:
                 Domoticz.Log("Mean Price Updated")
                 _plugin.GetDataMiniMaxMean.Disconnect()
 
+        else:
+            WriteDebug("Status = "+str(Status))
+            Domoticz.Error(str("Status "+str(Status)))
+            Domoticz.Error(str(Data))
+            if _plugin.GetDataCurrent.Connected():
+                _plugin.GetDataCurrent.Disconnect()
+            if _plugin.GetDataMiniMaxMean.Connected():
+                _plugin.GetDataMiniMaxMean.Disconnect()
+
     def onHeartbeat(self):
         WriteDebug("onHeartbeat")
         HourNow = (datetime.now().hour)
@@ -262,13 +259,11 @@ class BasePlugin:
 
         if self.RealTime is True:
             WriteDebug("onHeartbeatLivePower")
-            
+
             async def LivePower():
                 transport = WebsocketsTransport(url='wss://api.tibber.com/v1-beta/gql/subscriptions', headers={'Authorization': self.AccessToken})
                 try:
-                    async with Client(
-                        transport=transport, fetch_schema_from_transport=True, execute_timeout=7
-                    ) as session:
+                    async with Client(transport=transport, fetch_schema_from_transport=True, execute_timeout=7) as session:
                         query = gql("subscription{liveMeasurement(homeId:\"" + self.HomeID + "\"){power}}")
                         result = await session.execute(query)
                         self.watt = result["liveMeasurement"]["power"]
