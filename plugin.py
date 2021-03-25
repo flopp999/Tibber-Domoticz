@@ -30,7 +30,7 @@
     </description>
     <params>
         <param field="Mode1" label="Tibber Access Token" width="460px" required="true" default="d1007ead2dc84a2b82f0de19451c5fb22112f7ae11d19bf2bedb224a003ff74a"/>
-        <param field="Mode4" label="House ID" width="350px" required="false" default="Copy from Domoticz Log or Tibber Develop webpage"/>
+        <param field="Mode4" label="Home ID" width="350px" required="false" default="Copy from Domoticz Log or Tibber Develop webpage"/>
         <param field="Mode3" label="Transfer fee(öre)" width="50px" required="false" default="0"/>
         <param field="Mode2" label="Unit for devices" width="50px">
             <options>
@@ -82,9 +82,9 @@ logger.setLevel(logging.INFO)
 handler = RotatingFileHandler(dir+'/Tibber.log', maxBytes=100000, backupCount=5)
 logger.addHandler(handler)
 
-
 class BasePlugin:
     enabled = False
+
 
     def __init__(self):
         return
@@ -98,11 +98,11 @@ class BasePlugin:
         self.MinimumPriceUpdated = False
         self.MaximumPriceUpdated = False
         self.AccessToken = Parameters["Mode1"]
-        self.HouseID = Parameters["Mode4"]
         self.Unit = Parameters["Mode2"]
+        self.HomeID = Parameters["Mode4"]
         self.Fee = ""
-        self.HomeID = ""
         self.Pulse = "No"
+
         self.headers = {
             'Host': 'api.tibber.com',
             'Authorization': 'Bearer '+self.AccessToken,  # Tibber Token
@@ -127,12 +127,14 @@ class BasePlugin:
         else:
             WriteFile("AccessToken", self.AccessToken)
 
-#        if len(self.HouseID) is not 37:
-#            Domoticz.Log("House ID is not correct")
-#            WriteDebug("House ID not correct")
-#            self.HouseID = CheckFile("HouseID")
-#        else:
-#            WriteFile("HouseID", self.HouseID)
+        if len(self.HomeID) is not 37:
+            self.HomeID = []
+            Domoticz.Log("Home ID is not correct")
+            WriteDebug("Home ID not correct")
+        else:
+            self.HomeID = []
+            self.HomeID.append(Parameters["Mode4"])
+            WriteFile("HomeID", self.HomeID)
 
         if "tibberprice" not in Images:
             Domoticz.Image("tibberprice.zip").Create()
@@ -201,10 +203,16 @@ class BasePlugin:
                 _plugin.GetDataCurrent.Disconnect()
 
             if Connection.Name == ("Get HomeID"):
+                House = 0
                 for each in Data["data"]["viewer"]["homes"]:
-                    self.HomeID = each["id"]
+                    self.HomeID.append(each["id"])
                     Domoticz.Log(str(self.HomeID))
-                Domoticz.Log("HomeID collected")
+                    Domoticz.Log("Home ID = "+str(self.HomeID))
+                    WriteFile("HomeID_"+str(House), self.HomeID)
+                    House += 1
+
+                Domoticz.Log(str(House))
+
                 WriteDebug("HomeID collected")
                 _plugin.GetHomeID.Disconnect()
 
@@ -214,7 +222,7 @@ class BasePlugin:
                     Domoticz.Log("No real time consumption device is installed")
                     WriteDebug("No real time consumption device is installed")
                 else:
-                    Domoticz.Log("Real time consumption device is installed will fetch Power every 10 second")
+                    Domoticz.Log("Real time consumption device is installed and will be fetched every 10 seconds")
                     WriteDebug("Real time consumption device is installed")
                 _plugin.CheckRealTimeConsumption.Disconnect()
 
@@ -345,13 +353,13 @@ def onMessage(Connection, Data):
 
 
 def CreateFile():
-    if not os.path.isfile(dir+'/Tibber.ini'):
+    if not os.path.isfile(dir+"/Tibber.ini"):
         data = {}
         data["Config"] = []
         data["Config"].append({
              "AccessToken": ""
              })
-        with open(dir+'/Tibber.ini', 'w') as outfile:
+        with open(dir+"/Tibber.ini", 'w') as outfile:
             json.dump(data, outfile, indent=4)
 
 
@@ -368,10 +376,10 @@ def CheckFile(Parameter):
 
 def WriteFile(Parameter, text):
     CreateFile()
-    with open(dir+'/Tibber.ini') as jsonfile:
+    with open(dir+"/Tibber.ini") as jsonfile:
         data = json.load(jsonfile)
     data["Config"][0][Parameter] = text
-    with open(dir+'/Tibber.ini', 'w') as outfile:
+    with open(dir+"/Tibber.ini", 'w') as outfile:
         json.dump(data, outfile, indent=4)
 
 
