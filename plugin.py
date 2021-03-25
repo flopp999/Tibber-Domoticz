@@ -52,7 +52,7 @@ import Domoticz
 Package = True
 
 try:
-    import requests, json, os, logging, asyncio, sys
+    import requests, json, os, logging, asyncio
 except ImportError:
     Package = False
 
@@ -165,7 +165,6 @@ class BasePlugin:
 
         self.GetHomeID = Domoticz.Connection(Name="Get HomeID", Transport="TCP/IP", Protocol="HTTPS", Address="api.tibber.com", Port="443")
         if not _plugin.GetHomeID.Connected() and not _plugin.GetHomeID.Connecting() and self.HomeID == []:
-            Domoticz.Log("Home")
             _plugin.GetHomeID.Connect()
 
         self.CheckRealTimeHardware = Domoticz.Connection(Name="Check Real Time Hardware", Transport="TCP/IP", Protocol="HTTPS", Address="api.tibber.com", Port="443")
@@ -279,7 +278,6 @@ class BasePlugin:
                     async with Client(transport=transport, fetch_schema_from_transport=True, execute_timeout=7) as session:
                         query = gql("subscription{liveMeasurement(homeId:\"" + self.HomeID[0] + "\"){power}}")
                         result = await session.execute(query)
-                        Domoticz.Log(str(result))
                         self.watt = result["liveMeasurement"]["power"]
                         UpdateDevice(6, 0, str(self.watt), "watt", "Watt")
                 except Exception as e:
