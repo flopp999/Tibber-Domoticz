@@ -94,8 +94,8 @@ class BasePlugin:
             _plugin.GetDataCurrent.Disconnect()
         if _plugin.GetDataMiniMaxMean.Connected() or _plugin.GetDataMiniMaxMean.Connecting():
             _plugin.GetDataMiniMaxMean.Disconnect()
-        if _plugin.CheckRealTimeConsumption.Connected() or _plugin.CheckRealTimeConsumption.Connecting():
-            _plugin.CheckRealTimeConsumption.Disconnect()
+        if _plugin.CheckRealTimeHardware.Connected() or _plugin.CheckRealTimeHardware.Connecting():
+            _plugin.CheckRealTimeHardware.Disconnect()
         if _plugin.GetHomeID.Connected() or _plugin.GetHomeID.Connecting():
             _plugin.GetHomeID.Disconnect()
 
@@ -138,7 +138,7 @@ class BasePlugin:
         else:
             WriteFile("AccessToken", self.AccessToken)
 
-        if len(self.HomeID) is not 37:
+        if len(self.HomeID) is not 37:  # will get Home ID from server
             self.HomeID = []
             Domoticz.Log("Home ID is not correct")
             WriteDebug("Home ID not correct")
@@ -167,9 +167,9 @@ class BasePlugin:
         if not _plugin.GetHomeID.Connected() and not _plugin.GetHomeID.Connecting():
             _plugin.GetHomeID.Connect()
 
-        self.CheckRealTimeConsumption = Domoticz.Connection(Name="Check Real Time Consumption", Transport="TCP/IP", Protocol="HTTPS", Address="api.tibber.com", Port="443")
-        if not _plugin.CheckRealTimeConsumption.Connected() and not _plugin.CheckRealTimeConsumption.Connecting():
-            _plugin.CheckRealTimeConsumption.Connect()
+        self.CheckRealTimeHardware = Domoticz.Connection(Name="Check Real Time Hardware", Transport="TCP/IP", Protocol="HTTPS", Address="api.tibber.com", Port="443")
+        if not _plugin.CheckRealTimeHardware.Connected() and not _plugin.CheckRealTimeHardware.Connecting():
+            _plugin.CheckRealTimeHardware.Connect()
 
     def onConnect(self, Connection, Status, Description):
         if CheckInternet() is True and self.AllSettings is True:
@@ -186,8 +186,8 @@ class BasePlugin:
                     data = '{ "query": "{viewer {homes {id}}}" }'  # asking for HomeID
                     Connection.Send({'Verb': 'POST', 'URL': '/v1-beta/gql', 'Headers': self.headers, 'Data': data})
 
-                if Connection.Name == ("Check Real Time Consumption"):
-                    data = '{ "query": "{viewer {homes {features {realTimeConsumptionEnabled}}}}" }'  # asking for HomeID
+                if Connection.Name == ("Check Real Time Hardware"):
+                    data = '{ "query": "{viewer {homes {features {realTimeConsumptionEnabled}}}}" }'  # check if Real Time hardware is installed
                     Connection.Send({'Verb': 'POST', 'URL': '/v1-beta/gql', 'Headers': self.headers, 'Data': data})
 
     def onMessage(self, Connection, Data):
@@ -209,7 +209,6 @@ class BasePlugin:
                         UpdateDevice(3, 0, str(round(CurrentPrice+(self.Fee/100), 1)), self.Unit, "Current Price incl. fee")
 
                 WriteDebug("Current Price Updated")
-#                Domoticz.Log("Current Price Updated")
                 self.CurrentPriceUpdated = True
                 _plugin.GetDataCurrent.Disconnect()
 
@@ -224,15 +223,15 @@ class BasePlugin:
                 WriteDebug("HomeID collected")
                 _plugin.GetHomeID.Disconnect()
 
-            if Connection.Name == ("Check Real Time Consumption"):
+            if Connection.Name == ("Check Real Time Hardware"):
                 self.RealTime = Data["data"]["viewer"]["homes"][0]["features"]["realTimeConsumptionEnabled"]
                 if self.RealTime is False:
-                    Domoticz.Log("No real time consumption device is installed")
-                    WriteDebug("No real time consumption device is installed")
+                    Domoticz.Log("No real time hardware is installed")
+                    WriteDebug("No real time hardware is installed")
                 else:
-                    Domoticz.Log("Real time consumption device is installed and will be fetched every 10 seconds")
-                    WriteDebug("Real time consumption device is installed")
-                _plugin.CheckRealTimeConsumption.Disconnect()
+                    Domoticz.Log("Real time hardware is installed and will be fetched every 10 seconds")
+                    WriteDebug("Real time hardware is installed")
+                _plugin.CheckRealTimeHardware.Disconnect()
 
             if Connection.Name == ("Get MiniMaxMean"):
                 MiniMaxPrice = []
@@ -254,9 +253,6 @@ class BasePlugin:
                 WriteDebug("Minimum Price Updated")
                 WriteDebug("Maximum Price Updated")
                 WriteDebug("Mean Price Updated")
-#                Domoticz.Log("Minimum Price Updated")
-#                Domoticz.Log("Maximum Price Updated")
-#                Domoticz.Log("Mean Price Updated")
                 _plugin.GetDataMiniMaxMean.Disconnect()
 
         else:
@@ -406,8 +402,8 @@ def CheckInternet():
             _plugin.GetDataCurrent.Disconnect()
         if _plugin.GetDataMiniMaxMean.Connected() or _plugin.GetDataMiniMaxMean.Connecting():
             _plugin.GetDataMiniMaxMean.Disconnect()
-        if _plugin.CheckRealTimeConsumption.Connected() or _plugin.CheckRealTimeConsumption.Connecting():
-            _plugin.CheckRealTimeConsumption.Disconnect()
+        if _plugin.CheckRealTimeHardware.Connected() or _plugin.CheckRealTimeHardware.Connecting():
+            _plugin.CheckRealTimeHardware.Disconnect()
         if _plugin.GetHomeID.Connected() or _plugin.GetHomeID.Connecting():
             _plugin.GetHomeID.Disconnect()
         WriteDebug("Internet is not available")
