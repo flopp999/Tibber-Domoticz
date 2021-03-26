@@ -90,6 +90,8 @@ class BasePlugin:
         return
 
     def onStop(self):
+        Domoticz.Log("VVVVa")
+
         if _plugin.GetDataCurrent.Connected() or _plugin.GetDataCurrent.Connecting():
             _plugin.GetDataCurrent.Disconnect()
         if _plugin.GetDataMiniMaxMean.Connected() or _plugin.GetDataMiniMaxMean.Connecting():
@@ -187,10 +189,11 @@ class BasePlugin:
                     Connection.Send({'Verb': 'POST', 'URL': '/v1-beta/gql', 'Headers': self.headers, 'Data': data})
 
                 if Connection.Name == ("Check Real Time Hardware"):
-                    data = '{ "query": "{viewer {homes {features {realTimeConsumptionEnabled}}}}" }'  # check if Real Time hardware is installed
+                    data = '{ "query": "{viewer {homes {id,features {realTimeConsumptionEnabled}}}}" }'  # check if Real Time hardware is installed
                     Connection.Send({'Verb': 'POST', 'URL': '/v1-beta/gql', 'Headers': self.headers, 'Data': data})
 
     def onMessage(self, Connection, Data):
+       # Domoticz.Error(str(Data))
         Status = int(Data["Status"])
         Data = Data['Data'].decode('UTF-8')
         Data = json.loads(Data)
@@ -224,15 +227,10 @@ class BasePlugin:
                 _plugin.GetHomeID.Disconnect()
 
             if Connection.Name == ("Check Real Time Hardware"):
-                Domoticz.Log(str(Data))
-                self.RealTime = Data["data"]["viewer"]["homes"][0]["features"]["realTimeConsumptionEnabled"]
-                if self.RealTime is False:
-                    Domoticz.Log("No real time hardware is installed")
-                    WriteDebug("No real time hardware is installed")
-                else:
-                    Domoticz.Log("Real time hardware is installed and will be fetched every 10 seconds")
-                    WriteDebug("Real time hardware is installed")
-                self.RealTime = Data["data"]["viewer"]["homes"][1]["features"]["realTimeConsumptionEnabled"]
+                for each in Data["data"]["viewer"]["homes"]:
+                    Domoticz.Log(str(each))
+                    if each["id"]==self.HomeID[0]:
+                        self.RealTime = each["features"]["realTimeConsumptionEnabled"]
                 if self.RealTime is False:
                     Domoticz.Log("No real time hardware is installed")
                     WriteDebug("No real time hardware is installed")
@@ -274,23 +272,28 @@ class BasePlugin:
                 _plugin.GetDataMiniMaxMean.Disconnect()
 
     def onHeartbeat(self):
+        Domoticz.Log("AAA")
+        Domoticz.Log(str(self.RealTime))
         WriteDebug("onHeartbeat")
         HourNow = (datetime.now().hour)
         MinuteNow = (datetime.now().minute)
 
         if self.RealTime is True:
             WriteDebug("onHeartbeatLivePower")
-
+            Domoticz.Log("GGG")
             async def LivePower():
+                Domoticz.Log("dddd")
+
                 transport = WebsocketsTransport(url='wss://api.tibber.com/v1-beta/gql/subscriptions', headers={'Authorization': self.AccessToken})
                 try:
+                    Domoticz.Log("yyy")
                     async with Client(transport=transport, fetch_schema_from_transport=True, execute_timeout=7) as session:
                         query = gql("subscription{liveMeasurement(homeId:\"" + self.HomeID[0] + "\"){power}}")
                         result = await session.execute(query)
                         self.watt = result["liveMeasurement"]["power"]
                         UpdateDevice(6, 0, str(self.watt), "watt", "Watt")
                 except Exception as e:
-#                    Domoticz.Error("Something went wrong during fetching Live Data from Tibber")
+                    Domoticz.Error("Something went wrong during fetching Live Data from Tibber")
                     WriteDebug("Something went wrong during fetching Live Data Power from Tibber")
                     WriteDebug(str(e))
                     pass
