@@ -224,6 +224,7 @@ class BasePlugin:
                 _plugin.GetHomeID.Disconnect()
 
             if Connection.Name == ("Check Real Time Hardware"):
+                Domoticz.Log(str(Data))
                 self.RealTime = Data["data"]["viewer"]["homes"][0]["features"]["realTimeConsumptionEnabled"]
                 if self.RealTime is False:
                     Domoticz.Log("No real time hardware is installed")
