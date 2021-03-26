@@ -231,6 +231,14 @@ class BasePlugin:
                 else:
                     Domoticz.Log("Real time hardware is installed and will be fetched every 10 seconds")
                     WriteDebug("Real time hardware is installed")
+                self.RealTime = Data["data"]["viewer"]["homes"][1]["features"]["realTimeConsumptionEnabled"]
+                if self.RealTime is False:
+                    Domoticz.Log("No real time hardware is installed")
+                    WriteDebug("No real time hardware is installed")
+                else:
+                    Domoticz.Log("Real time hardware is installed and will be fetched every 10 seconds")
+                    WriteDebug("Real time hardware is installed")
+
                 _plugin.CheckRealTimeHardware.Disconnect()
 
             if Connection.Name == ("Get MiniMaxMean"):
