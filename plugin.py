@@ -98,6 +98,8 @@ class BasePlugin:
             _plugin.CheckRealTimeHardware.Disconnect()
         if _plugin.GetHomeID.Connected() or _plugin.GetHomeID.Connecting():
             _plugin.GetHomeID.Disconnect()
+        if  _plugin.GetHouseNumber.Connected() or _plugin.GetHouseNumber.Connecting():
+            _plugin.GetHouseNumber.Disconnect()
 
     def onStart(self):
         WriteDebug("onStart")
