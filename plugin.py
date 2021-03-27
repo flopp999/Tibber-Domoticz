@@ -302,7 +302,6 @@ class BasePlugin:
                         self.watt = result["liveMeasurement"]["power"]
                         UpdateDevice(6, 0, str(self.watt), "watt", "Watt")
                 except Exception as e:
-                    Domoticz.Error("Something went wrong during fetching Live Data from Tibber")
                     WriteDebug("Something went wrong during fetching Live Data Power from Tibber")
                     WriteDebug(str(e))
                     pass
