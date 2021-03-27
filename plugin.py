@@ -156,6 +156,18 @@ class BasePlugin:
         if Package is False:
             Domoticz.Log("Missing packages")
 
+        self.GetHomeID = Domoticz.Connection(Name="Get HomeID", Transport="TCP/IP", Protocol="HTTPS", Address="api.tibber.com", Port="443")
+        if not _plugin.GetHomeID.Connected() and not _plugin.GetHomeID.Connecting() and not self.HomeID:
+            _plugin.GetHomeID.Connect()
+
+        self.GetHouseNumber = Domoticz.Connection(Name="Get House Number", Transport="TCP/IP", Protocol="HTTPS", Address="api.tibber.com", Port="443")
+        if not _plugin.GetHouseNumber.Connected() and not _plugin.GetHouseNumber.Connecting() and self.HomeID:
+            _plugin.GetHouseNumber.Connect()
+
+        self.CheckRealTimeHardware = Domoticz.Connection(Name="Check Real Time Hardware", Transport="TCP/IP", Protocol="HTTPS", Address="api.tibber.com", Port="443")
+        if not _plugin.CheckRealTimeHardware.Connected() and not _plugin.CheckRealTimeHardware.Connecting():
+            _plugin.CheckRealTimeHardware.Connect()
+
         self.GetDataCurrent = Domoticz.Connection(Name="Get Current", Transport="TCP/IP", Protocol="HTTPS", Address="api.tibber.com", Port="443")
         if not _plugin.GetDataCurrent.Connected() and not _plugin.GetDataCurrent.Connecting():
             _plugin.GetDataCurrent.Connect()
@@ -164,21 +176,17 @@ class BasePlugin:
         if not _plugin.GetDataMiniMaxMean.Connected() and not _plugin.GetDataMiniMaxMean.Connecting():
             _plugin.GetDataMiniMaxMean.Connect()
 
-        self.GetHomeID = Domoticz.Connection(Name="Get HomeID", Transport="TCP/IP", Protocol="HTTPS", Address="api.tibber.com", Port="443")
-        if not _plugin.GetHomeID.Connected() and not _plugin.GetHomeID.Connecting() and not self.HomeID:
-            _plugin.GetHomeID.Connect()
-
-        self.CheckRealTimeHardware = Domoticz.Connection(Name="Check Real Time Hardware", Transport="TCP/IP", Protocol="HTTPS", Address="api.tibber.com", Port="443")
-        if not _plugin.CheckRealTimeHardware.Connected() and not _plugin.CheckRealTimeHardware.Connecting():
-            _plugin.CheckRealTimeHardware.Connect()
-
-        self.GetHouseNumber = Domoticz.Connection(Name="Get House Number", Transport="TCP/IP", Protocol="HTTPS", Address="api.tibber.com", Port="443")
-        if not _plugin.GetHouseNumber.Connected() and not _plugin.GetHouseNumber.Connecting() and self.HomeID:
-            _plugin.GetHouseNumber.Connect()
-
     def onConnect(self, Connection, Status, Description):
         if CheckInternet() is True and self.AllSettings is True:
             if (Status == 0):
+                if Connection.Name == ("Get HomeID"):
+                    data = '{ "query": "{viewer {homes {id}}}" }'  # asking for HomeID
+                    Connection.Send({'Verb': 'POST', 'URL': '/v1-beta/gql', 'Headers': self.headers, 'Data': data})
+
+                if Connection.Name == ("Get House Number"):
+                    data = '{ "query": "{viewer {homes {id}}}" }'  # asking for all homids
+                    Connection.Send({'Verb': 'POST', 'URL': '/v1-beta/gql', 'Headers': self.headers, 'Data': data})
+
                 if Connection.Name == ("Get Current"):
                     data = '{ "query": "{viewer {homes {currentSubscription {priceInfo {current {total }}}}}}" }'  # asking for this hourly price
                     Connection.Send({'Verb': 'POST', 'URL': '/v1-beta/gql', 'Headers': self.headers, 'Data': data})
@@ -187,17 +195,10 @@ class BasePlugin:
                     data = '{ "query": "{viewer {homes {currentSubscription {priceInfo {today {total }}}}}}" }'  # asking for this hourly price
                     Connection.Send({'Verb': 'POST', 'URL': '/v1-beta/gql', 'Headers': self.headers, 'Data': data})
 
-                if Connection.Name == ("Get HomeID"):
-                    data = '{ "query": "{viewer {homes {id}}}" }'  # asking for HomeID
-                    Connection.Send({'Verb': 'POST', 'URL': '/v1-beta/gql', 'Headers': self.headers, 'Data': data})
-
                 if Connection.Name == ("Check Real Time Hardware"):
                     data = '{ "query": "{viewer {homes {id,features {realTimeConsumptionEnabled}}}}" }'  # check if Real Time hardware is installed
                     Connection.Send({'Verb': 'POST', 'URL': '/v1-beta/gql', 'Headers': self.headers, 'Data': data})
 
-                if Connection.Name == ("Get House Number"):
-                    data = '{ "query": "{viewer {homes {id}}}" }'  # asking for all homids
-                    Connection.Send({'Verb': 'POST', 'URL': '/v1-beta/gql', 'Headers': self.headers, 'Data': data})
 
     def onMessage(self, Connection, Data):
        # Domoticz.Error(str(Data))
