@@ -3,7 +3,7 @@
 # Author: flopp999
 #
 """
-<plugin key="Tibber" name="Tibber API 0.90" author="flopp999" version="0.90" wikilink="https://github.com/flopp999/Tibber-Domoticz" externallink="https://tibber.com/se/invite/8af85f51">
+<plugin key="TibberDev" name="TibberDev API 0.91" author="flopp999" version="0.91" wikilink="https://github.com/flopp999/Tibber-Domoticz" externallink="https://tibber.com/se/invite/8af85f51">
     <description>
         <h2>Tibber API is used to fetch data from Tibber.com</h2><br/>
         <h2>Support me with a coffee &<a href="https://www.buymeacoffee.com/flopp999">https://www.buymeacoffee.com/flopp999</a></h2><br/>
@@ -30,6 +30,7 @@
     </description>
     <params>
         <param field="Mode1" label="Tibber Access Token" width="460px" required="true" default="d1007ead2dc84a2b82f0de19451c5fb22112f7ae11d19bf2bedb224a003ff74a"/>
+        <param field="Mode4" label="Home ID" width="350px" required="false" default="Copy from Domoticz Log or Tibber Develop webpage"/>
         <param field="Mode3" label="Transfer fee(öre)" width="50px" required="false" default="0"/>
         <param field="Mode2" label="Unit for devices" width="50px">
             <options>
@@ -81,12 +82,24 @@ logger.setLevel(logging.INFO)
 handler = RotatingFileHandler(dir+'/Tibber.log', maxBytes=100000, backupCount=5)
 logger.addHandler(handler)
 
-
 class BasePlugin:
     enabled = False
 
+
     def __init__(self):
         return
+
+    def onStop(self):
+        if _plugin.GetDataCurrent.Connected() or _plugin.GetDataCurrent.Connecting():
+            _plugin.GetDataCurrent.Disconnect()
+        if _plugin.GetDataMiniMaxMean.Connected() or _plugin.GetDataMiniMaxMean.Connecting():
+            _plugin.GetDataMiniMaxMean.Disconnect()
+        if _plugin.CheckRealTimeHardware.Connected() or _plugin.CheckRealTimeHardware.Connecting():
+            _plugin.CheckRealTimeHardware.Disconnect()
+        if _plugin.GetHomeID.Connected() or _plugin.GetHomeID.Connecting():
+            _plugin.GetHomeID.Disconnect()
+        if  _plugin.GetHouseNumber.Connected() or _plugin.GetHouseNumber.Connecting():
+            _plugin.GetHouseNumber.Disconnect()
 
     def onStart(self):
         WriteDebug("onStart")
@@ -96,11 +109,14 @@ class BasePlugin:
         self.MeanPriceUpdated = False
         self.MinimumPriceUpdated = False
         self.MaximumPriceUpdated = False
+        self.LiveDataUpdated = False
         self.AccessToken = Parameters["Mode1"]
         self.Unit = Parameters["Mode2"]
+        self.HomeID = Parameters["Mode4"]
         self.Fee = ""
-        self.HomeID = ""
         self.Pulse = "No"
+        self.House = 0
+
         self.headers = {
             'Host': 'api.tibber.com',
             'Authorization': 'Bearer '+self.AccessToken,  # Tibber Token
@@ -125,13 +141,32 @@ class BasePlugin:
         else:
             WriteFile("AccessToken", self.AccessToken)
 
-        if 'tibberprice' not in Images:
-            Domoticz.Image('tibberprice.zip').Create()
+        if len(self.HomeID) is not 36:  # will get Home ID from server
+            self.HomeID = ""
+            Domoticz.Log("Home ID is not correct")
+            WriteDebug("Home ID not correct")
+        else:
+            WriteFile("HomeID", self.HomeID)
+
+        if "tibberprice" not in Images:
+            Domoticz.Image("tibberprice.zip").Create()
 
         self.ImageID = Images["tibberprice"].ID
 
         if Package is False:
             Domoticz.Log("Missing packages")
+
+        self.GetHomeID = Domoticz.Connection(Name="Get HomeID", Transport="TCP/IP", Protocol="HTTPS", Address="api.tibber.com", Port="443")
+        if not _plugin.GetHomeID.Connected() and not _plugin.GetHomeID.Connecting() and not self.HomeID:
+            _plugin.GetHomeID.Connect()
+
+        self.GetHouseNumber = Domoticz.Connection(Name="Get House Number", Transport="TCP/IP", Protocol="HTTPS", Address="api.tibber.com", Port="443")
+        if not _plugin.GetHouseNumber.Connected() and not _plugin.GetHouseNumber.Connecting() and self.HomeID:
+            _plugin.GetHouseNumber.Connect()
+
+        self.CheckRealTimeHardware = Domoticz.Connection(Name="Check Real Time Hardware", Transport="TCP/IP", Protocol="HTTPS", Address="api.tibber.com", Port="443")
+        if not _plugin.CheckRealTimeHardware.Connected() and not _plugin.CheckRealTimeHardware.Connecting():
+            _plugin.CheckRealTimeHardware.Connect()
 
         self.GetDataCurrent = Domoticz.Connection(Name="Get Current", Transport="TCP/IP", Protocol="HTTPS", Address="api.tibber.com", Port="443")
         if not _plugin.GetDataCurrent.Connected() and not _plugin.GetDataCurrent.Connecting():
@@ -141,17 +176,17 @@ class BasePlugin:
         if not _plugin.GetDataMiniMaxMean.Connected() and not _plugin.GetDataMiniMaxMean.Connecting():
             _plugin.GetDataMiniMaxMean.Connect()
 
-        self.GetHomeID = Domoticz.Connection(Name="Get HomeID", Transport="TCP/IP", Protocol="HTTPS", Address="api.tibber.com", Port="443")
-        if not _plugin.GetHomeID.Connected() and not _plugin.GetHomeID.Connecting():
-            _plugin.GetHomeID.Connect()
-
-        self.CheckRealTimeConsumption = Domoticz.Connection(Name="Check Real Time Consumption", Transport="TCP/IP", Protocol="HTTPS", Address="api.tibber.com", Port="443")
-        if not _plugin.CheckRealTimeConsumption.Connected() and not _plugin.CheckRealTimeConsumption.Connecting():
-            _plugin.CheckRealTimeConsumption.Connect()
-
     def onConnect(self, Connection, Status, Description):
         if CheckInternet() is True and self.AllSettings is True:
             if (Status == 0):
+                if Connection.Name == ("Get HomeID"):
+                    data = '{ "query": "{viewer {homes {id}}}" }'  # asking for HomeID
+                    Connection.Send({'Verb': 'POST', 'URL': '/v1-beta/gql', 'Headers': self.headers, 'Data': data})
+
+                if Connection.Name == ("Get House Number"):
+                    data = '{ "query": "{viewer {homes {id}}}" }'  # asking for all homids
+                    Connection.Send({'Verb': 'POST', 'URL': '/v1-beta/gql', 'Headers': self.headers, 'Data': data})
+
                 if Connection.Name == ("Get Current"):
                     data = '{ "query": "{viewer {homes {currentSubscription {priceInfo {current {total }}}}}}" }'  # asking for this hourly price
                     Connection.Send({'Verb': 'POST', 'URL': '/v1-beta/gql', 'Headers': self.headers, 'Data': data})
@@ -160,70 +195,71 @@ class BasePlugin:
                     data = '{ "query": "{viewer {homes {currentSubscription {priceInfo {today {total }}}}}}" }'  # asking for this hourly price
                     Connection.Send({'Verb': 'POST', 'URL': '/v1-beta/gql', 'Headers': self.headers, 'Data': data})
 
-                if Connection.Name == ("Get HomeID"):
-                    data = '{ "query": "{viewer {homes {id}}}" }'  # asking for HomeID
+                if Connection.Name == ("Check Real Time Hardware"):
+                    data = '{ "query": "{viewer {homes {id,features {realTimeConsumptionEnabled}}}}" }'  # check if Real Time hardware is installed
                     Connection.Send({'Verb': 'POST', 'URL': '/v1-beta/gql', 'Headers': self.headers, 'Data': data})
 
-                if Connection.Name == ("Check Real Time Consumption"):
-                    data = '{ "query": "{viewer {homes {features {realTimeConsumptionEnabled}}}}" }'  # asking for HomeID
-                    Connection.Send({'Verb': 'POST', 'URL': '/v1-beta/gql', 'Headers': self.headers, 'Data': data})
 
     def onMessage(self, Connection, Data):
+       # Domoticz.Error(str(Data))
         Status = int(Data["Status"])
-
-        if (Status == 400):
-            Domoticz.Error(str("Something went wrong"))
-            if _plugin.GetDataCurrent.Connected():
-                _plugin.GetDataCurrent.Disconnect()
-            if _plugin.GetDataMiniMaxMean.Connected():
-                _plugin.GetDataMiniMaxMean.Disconnect()
+        Data = Data['Data'].decode('UTF-8')
+        Data = json.loads(Data)
 
         if (Status == 200):
             if Connection.Name == ("Get Current"):
-                self.data = Data['Data'].decode('UTF-8')
-                self.data = json.loads(self.data)
-                CurrentPrice = round(self.data["data"]["viewer"]["homes"][0]["currentSubscription"]["priceInfo"]["current"]["total"], 3)
+                CurrentPrice = round(Data["data"]["viewer"]["homes"][self.House]["currentSubscription"]["priceInfo"]["current"]["total"], 3)
                 if _plugin.Unit == "öre":
                     CurrentPrice = CurrentPrice * 100
-
                 UpdateDevice(1, 0, str(round(CurrentPrice, 1)), self.Unit, "Current Price")
                 if self.Fee != "":
-                    if _plugin.Unit == "öre":
+                    if self.Unit == "öre":
                         UpdateDevice(3, 0, str(round(CurrentPrice+self.Fee, 1)), self.Unit, "Current Price incl. fee")
                     else:
                         UpdateDevice(3, 0, str(round(CurrentPrice+(self.Fee/100), 1)), self.Unit, "Current Price incl. fee")
 
                 WriteDebug("Current Price Updated")
-                Domoticz.Log("Current Price Updated")
                 self.CurrentPriceUpdated = True
                 _plugin.GetDataCurrent.Disconnect()
 
             if Connection.Name == ("Get HomeID"):
-                self.data = Data['Data'].decode('UTF-8')
-                self.data = json.loads(self.data)
-                self.HomeID = self.data["data"]["viewer"]["homes"][0]["id"]
-                Domoticz.Log("HomeID collected")
+                for each in Data["data"]["viewer"]["homes"]:
+                    Domoticz.Log("Home "+str(self.House)+" ID = "+str(each["id"]))
+                    WriteFile("HomeID_"+str(self.House), self.HomeID)
+                self.HomeID = Data["data"]["viewer"]["homes"][self.House]["id"]
+                Domoticz.Log(str(self.HomeID))
+                Domoticz.Log(str(self.House))
                 WriteDebug("HomeID collected")
                 _plugin.GetHomeID.Disconnect()
 
-            if Connection.Name == ("Check Real Time Consumption"):
-                self.data = Data['Data'].decode('UTF-8')
-                self.data = json.loads(self.data)
-                self.RealTime = self.data["data"]["viewer"]["homes"][0]["features"]["realTimeConsumptionEnabled"]
+            if Connection.Name == ("Get House Number"):
+                Domoticz.Log(str(Data))
+                Domoticz.Log(str(len(Data["data"]["viewer"]["homes"])))
+                if len(Data["data"]["viewer"]["homes"]) > 0:
+                    for each in Data["data"]["viewer"]["homes"]:
+                        if self.HomeID == each["id"]:
+                            Domoticz.Log("Rätt")
+                            continue
+                        self.House += 1
+                Domoticz.Log(str(self.House))
+
+            if Connection.Name == ("Check Real Time Hardware"):
+                for each in Data["data"]["viewer"]["homes"]:
+                    if each["id"] == self.HomeID:
+                        self.RealTime = each["features"]["realTimeConsumptionEnabled"]
                 if self.RealTime is False:
-                    Domoticz.Log("No real time consumption device is installed")
-                    WriteDebug("No real time consumption device is installed")
+                    Domoticz.Log("No real time hardware is installed")
+                    WriteDebug("No real time hardware is installed")
                 else:
-                    Domoticz.Log("Real time consumption device is installed will fetch Power every 10 second")
-                    WriteDebug("Real time consumption device is installed")
-                _plugin.CheckRealTimeConsumption.Disconnect()
+                    Domoticz.Log("Real time hardware is installed and will be fetched every 10 seconds")
+                    WriteDebug("Real time hardware is installed")
+
+                _plugin.CheckRealTimeHardware.Disconnect()
 
             if Connection.Name == ("Get MiniMaxMean"):
-                self.data = Data['Data'].decode('UTF-8')
-                self.data = json.loads(self.data)
                 MiniMaxPrice = []
                 MeanPrice = float(0)
-                for each in self.data["data"]["viewer"]["homes"][0]["currentSubscription"]["priceInfo"]["today"]:
+                for each in Data["data"]["viewer"]["homes"][self.House]["currentSubscription"]["priceInfo"]["today"]:
                     MiniMaxPrice.append(each["total"])
                     MeanPrice += each["total"]
                 MinimumPrice = min(MiniMaxPrice)
@@ -240,9 +276,15 @@ class BasePlugin:
                 WriteDebug("Minimum Price Updated")
                 WriteDebug("Maximum Price Updated")
                 WriteDebug("Mean Price Updated")
-                Domoticz.Log("Minimum Price Updated")
-                Domoticz.Log("Maximum Price Updated")
-                Domoticz.Log("Mean Price Updated")
+                _plugin.GetDataMiniMaxMean.Disconnect()
+
+        else:
+            WriteDebug("Status = "+str(Status))
+            Domoticz.Error(str("Status "+str(Status)))
+            Domoticz.Error(str(Data))
+            if _plugin.GetDataCurrent.Connected():
+                _plugin.GetDataCurrent.Disconnect()
+            if _plugin.GetDataMiniMaxMean.Connected():
                 _plugin.GetDataMiniMaxMean.Disconnect()
 
     def onHeartbeat(self):
@@ -252,19 +294,17 @@ class BasePlugin:
 
         if self.RealTime is True:
             WriteDebug("onHeartbeatLivePower")
-            
             async def LivePower():
                 transport = WebsocketsTransport(url='wss://api.tibber.com/v1-beta/gql/subscriptions', headers={'Authorization': self.AccessToken})
                 try:
-                    async with Client(
-                        transport=transport, fetch_schema_from_transport=True, execute_timeout=7
-                    ) as session:
+                    async with Client(transport=transport, fetch_schema_from_transport=True, execute_timeout=7) as session:
                         query = gql("subscription{liveMeasurement(homeId:\"" + self.HomeID + "\"){power}}")
                         result = await session.execute(query)
                         self.watt = result["liveMeasurement"]["power"]
                         UpdateDevice(6, 0, str(self.watt), "watt", "Watt")
-                except:
-                    WriteDebug("Something went wrong during getting Power from Tibber")
+                except Exception as e:
+                    WriteDebug("Something went wrong during fetching Live Data Power from Tibber")
+                    WriteDebug(str(e))
                     pass
 
             asyncio.run(LivePower())
@@ -289,8 +329,9 @@ class BasePlugin:
                         UpdateDevice(10, 0, str(round(accCost, 1)), "kr", "Accumulated Cost")
                         UpdateDevice(11, 0, str(round(accCons, 1)), "kWh", "Accumulated Consumption")
                         self.LiveDataUpdated = True
-                except:
-                    WriteDebug("Something went wrong during getting Power from Tibber")
+                except Exception as e:
+                    WriteDebug("Something went wrong during fetching Live Data from Tibber")
+                    WriteDebug(str(e))
                     pass
 
             asyncio.run(LiveData())
@@ -321,14 +362,17 @@ def UpdateDevice(ID, nValue, sValue, unit, Name):
     if (ID in Devices):
         if (Devices[ID].nValue != nValue) or (Devices[ID].sValue != sValue):
             Devices[ID].Update(nValue, str(sValue))
+            Domoticz.Log(Name+" Updated")
     if (ID not in Devices):
         Domoticz.Device(Name=Name, Unit=ID, TypeName="Custom", Used=1, Image=(_plugin.ImageID), Options={"Custom": "0;"+unit}, Description="Desc").Create()
-
 
 def onStart():
     global _plugin
     _plugin.onStart()
 
+def onStop():
+    global _plugin
+    _plugin.onStop()
 
 def onConnect(Connection, Status, Description):
     global _plugin
@@ -340,13 +384,13 @@ def onMessage(Connection, Data):
 
 
 def CreateFile():
-    if not os.path.isfile(dir+'/Tibber.ini'):
+    if not os.path.isfile(dir+"/Tibber.ini"):
         data = {}
         data["Config"] = []
         data["Config"].append({
              "AccessToken": ""
              })
-        with open(dir+'/Tibber.ini', 'w') as outfile:
+        with open(dir+"/Tibber.ini", 'w') as outfile:
             json.dump(data, outfile, indent=4)
 
 
@@ -363,10 +407,10 @@ def CheckFile(Parameter):
 
 def WriteFile(Parameter, text):
     CreateFile()
-    with open(dir+'/Tibber.ini') as jsonfile:
+    with open(dir+"/Tibber.ini") as jsonfile:
         data = json.load(jsonfile)
     data["Config"][0][Parameter] = text
-    with open(dir+'/Tibber.ini', 'w') as outfile:
+    with open(dir+"/Tibber.ini", 'w') as outfile:
         json.dump(data, outfile, indent=4)
 
 
@@ -382,8 +426,8 @@ def CheckInternet():
             _plugin.GetDataCurrent.Disconnect()
         if _plugin.GetDataMiniMaxMean.Connected() or _plugin.GetDataMiniMaxMean.Connecting():
             _plugin.GetDataMiniMaxMean.Disconnect()
-        if _plugin.CheckRealTimeConsumption.Connected or _plugin.CheckRealTimeConsumption.Connecting():
-            _plugin.CheckRealTimeConsumption.Disconnect()
+        if _plugin.CheckRealTimeHardware.Connected() or _plugin.CheckRealTimeHardware.Connecting():
+            _plugin.CheckRealTimeHardware.Disconnect()
         if _plugin.GetHomeID.Connected() or _plugin.GetHomeID.Connecting():
             _plugin.GetHomeID.Disconnect()
         WriteDebug("Internet is not available")
