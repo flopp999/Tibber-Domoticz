@@ -358,7 +358,7 @@ global _plugin
 _plugin = BasePlugin()
 
 
-def UpdateDevice(ID, nValue, sValue, unit, Name,):
+def UpdateDevice(ID, nValue, sValue, unit, Name):
     if (ID in Devices):
         if (Devices[ID].nValue != nValue) or (Devices[ID].sValue != sValue):
             Devices[ID].Update(nValue, str(sValue))
