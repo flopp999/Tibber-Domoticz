@@ -52,7 +52,7 @@ import Domoticz
 Package = True
 
 try:
-    import requests, json, os, logging, asyncio, time
+    import requests, json, os, logging, asyncio
 except ImportError:
     Package = False
 
