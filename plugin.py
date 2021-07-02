@@ -151,10 +151,10 @@ class BasePlugin:
             self.AllSettings = True
             WriteFile("HomeID", self.HomeID)
 
-       # if "tibberdev" not in Images:
-        #    Domoticz.Image("tibberprice.zip").Create()
+        if "tibberprice" not in Images:
+            Domoticz.Image("tibberprice.zip").Create()
 
-       # self.ImageID = Images["tibberdev"].ID
+        self.ImageID = Images["tibberprice"].ID
 
         if Package is False:
             Domoticz.Log("Missing packages")
@@ -304,7 +304,6 @@ class BasePlugin:
         WriteDebug("onHeartbeat")
         HourNow = (datetime.now().hour)
         MinuteNow = (datetime.now().minute)
-#        Domoticz.Log(str(self.AllSettings))
 
         if self.RealTime is True and self.AllSettings is True:
             WriteDebug("onHeartbeatLivePower")
