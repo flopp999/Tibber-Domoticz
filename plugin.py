@@ -151,10 +151,10 @@ class BasePlugin:
             self.AllSettings = True
             WriteFile("HomeID", self.HomeID)
 
-        if "tibberprice" not in Images:
-            Domoticz.Image("tibberprice.zip").Create()
+       # if "tibberdev" not in Images:
+        #    Domoticz.Image("tibberprice.zip").Create()
 
-        self.ImageID = Images["tibberprice"].ID
+       # self.ImageID = Images["tibberdev"].ID
 
         if Package is False:
             Domoticz.Log("Missing packages")
@@ -168,6 +168,7 @@ class BasePlugin:
             _plugin.GetHouseNumber.Connect()
 
         self.CheckRealTimeHardware = Domoticz.Connection(Name="Check Real Time Hardware", Transport="TCP/IP", Protocol="HTTPS", Address="api.tibber.com", Port="443")
+
 
         self.GetDataCurrent = Domoticz.Connection(Name="Get Current", Transport="TCP/IP", Protocol="HTTPS", Address="api.tibber.com", Port="443")
 
@@ -204,6 +205,7 @@ class BasePlugin:
 
         if (Status == 200):
 
+
             if Connection.Name == ("Get HomeID"):
 
                 for each in Data["data"]["viewer"]["homes"]:
@@ -215,6 +217,7 @@ class BasePlugin:
                 _plugin.GetHouseNumber.Connect()
 
             if Connection.Name == ("Get House Number"):
+
 
                 if 'errors' in Data:
                     self.AllSettings = False
@@ -249,6 +252,7 @@ class BasePlugin:
 
 
             if Connection.Name == ("Get Current"):
+
 
                 CurrentPrice = round(Data["data"]["viewer"]["homes"][self.House]["currentSubscription"]["priceInfo"]["current"]["total"], 3)
                 if _plugin.Unit == "öre":
@@ -300,6 +304,7 @@ class BasePlugin:
         WriteDebug("onHeartbeat")
         HourNow = (datetime.now().hour)
         MinuteNow = (datetime.now().minute)
+#        Domoticz.Log(str(self.AllSettings))
 
         if self.RealTime is True and self.AllSettings is True:
             WriteDebug("onHeartbeatLivePower")
@@ -411,6 +416,7 @@ def CheckFile(Parameter):
             data = data["Config"][0][Parameter]
             if data == "":
                 return
+
             else:
                 _plugin.AllSettings = True
                 return data
