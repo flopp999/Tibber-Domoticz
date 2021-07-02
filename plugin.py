@@ -3,7 +3,7 @@
 # Author: flopp999
 #
 """
-<plugin key="TibberDev" name="TibberDev API 0.91" author="flopp999" version="0.91" wikilink="https://github.com/flopp999/Tibber-Domoticz" externallink="https://tibber.com/se/invite/8af85f51">
+<plugin key="Tibber" name="Tibber API 0.92" author="flopp999" version="0.92" wikilink="https://github.com/flopp999/Tibber-Domoticz" externallink="https://tibber.com/se/invite/8af85f51">
     <description>
         <h2>Tibber API is used to fetch data from Tibber.com</h2><br/>
         <h2>Support me with a coffee &<a href="https://www.buymeacoffee.com/flopp999">https://www.buymeacoffee.com/flopp999</a></h2><br/>
@@ -11,7 +11,7 @@
         <ul style="list-style-type:square">
             <li>Fetch current price including taxes, minimum power, maximum power, average power, accumulated cost and accumulated consumption, this will happen every hour at minute 0</li>
             <li>Fetch today's minimum, maximum and mean price including taxes, this will happen 10 minutes past midnight</li>
-            <li>Fetch current Power(watt) every 10 seconds if you have Tibber Pulse installed</li>
+            <li>Fetch current Power(watt) every 10 seconds if you have Tibber Watty/Pulse installed</li>
             <li>Possible to get prices including transfering fee</li>
             <li>Debug to file ../plugins/Tibber/Tibber.log</li>
         </ul>
@@ -82,6 +82,7 @@ logger.setLevel(logging.INFO)
 handler = RotatingFileHandler(dir+'/Tibber.log', maxBytes=100000, backupCount=5)
 logger.addHandler(handler)
 
+
 class BasePlugin:
     enabled = False
 
@@ -106,9 +107,7 @@ class BasePlugin:
         self.AllSettings = False
         self.LiveDataUpdated = False
         self.CurrentPriceUpdated = False
-#        self.MeanPriceUpdated = False
         self.MiniMaxMeanPriceUpdated = False
-#        self.MaximumPriceUpdated = False
         self.LiveDataUpdated = False
         self.AccessToken = Parameters["Mode1"]
         self.Unit = Parameters["Mode2"]
@@ -152,10 +151,10 @@ class BasePlugin:
             self.AllSettings = True
             WriteFile("HomeID", self.HomeID)
 
-       # if "tibberdev" not in Images:
-        #    Domoticz.Image("tibberprice.zip").Create()
+        if "tibberprice" not in Images:
+            Domoticz.Image("tibberprice.zip").Create()
 
-       # self.ImageID = Images["tibberdev"].ID
+        self.ImageID = Images["tibberprice"].ID
 
         if Package is False:
             Domoticz.Log("Missing packages")
@@ -169,16 +168,11 @@ class BasePlugin:
             _plugin.GetHouseNumber.Connect()
 
         self.CheckRealTimeHardware = Domoticz.Connection(Name="Check Real Time Hardware", Transport="TCP/IP", Protocol="HTTPS", Address="api.tibber.com", Port="443")
-#        if not _plugin.CheckRealTimeHardware.Connected() and not _plugin.CheckRealTimeHardware.Connecting():
-#           _plugin.CheckRealTimeHardware.Connect()
+
 
         self.GetDataCurrent = Domoticz.Connection(Name="Get Current", Transport="TCP/IP", Protocol="HTTPS", Address="api.tibber.com", Port="443")
-#        if not _plugin.GetDataCurrent.Connected() and not _plugin.GetDataCurrent.Connecting():
-#            _plugin.GetDataCurrent.Connect()
 
         self.GetDataMiniMaxMean = Domoticz.Connection(Name="Get MiniMaxMean", Transport="TCP/IP", Protocol="HTTPS", Address="api.tibber.com", Port="443")
-#        if not _plugin.GetDataMiniMaxMean.Connected() and not _plugin.GetDataMiniMaxMean.Connecting() and self.AllSettings:
-#            _plugin.GetDataMiniMaxMean.Connect()
 
     def onConnect(self, Connection, Status, Description):
         if CheckInternet() is True and self.AllSettings is True:
@@ -210,44 +204,35 @@ class BasePlugin:
         Data = json.loads(Data)
 
         if (Status == 200):
-#            Domoticz.Error("200")
+
 
             if Connection.Name == ("Get HomeID"):
-#                Domoticz.Error("home")
 
                 for each in Data["data"]["viewer"]["homes"]:
-#                    Domoticz.Log("Home "+str(self.House)+" ID = "+str(each["id"]))
+                    Domoticz.Log("Home "+str(self.House)+" has ID = "+str(each["id"]))
                     WriteFile("HomeID_"+str(self.House), self.HomeID)
                 self.HomeID = Data["data"]["viewer"]["homes"][self.House]["id"]
-#                Domoticz.Log(str(self.HomeID))
-#                Domoticz.Log(str(self.House))
                 WriteDebug("HomeID collected")
                 _plugin.GetHomeID.Disconnect()
                 _plugin.GetHouseNumber.Connect()
 
             if Connection.Name == ("Get House Number"):
-#                Domoticz.Error("house")
-#                Domoticz.Error(str(Data))
+
 
                 if 'errors' in Data:
-#                    Domoticz.Log(str(self.AllSettings))
                     self.AllSettings = False
                     Domoticz.Error(str(Data["errors"][0]["message"]))
-#                    Domoticz.Log(str(self.AllSettings))
 
                 else:
-#                    Domoticz.Log(str(len(Data["data"]["viewer"]["homes"])))
                     if len(Data["data"]["viewer"]["homes"]) > 0:
                         for each in Data["data"]["viewer"]["homes"]:
                             if self.HomeID == each["id"]:
-#                                Domoticz.Log("Rätt")
                                 continue
                             self.House += 1
                     Domoticz.Log("Using Home ID = "+str(self.HomeID))
 
                     _plugin.CheckRealTimeHardware.Connect()
 
-#                Domoticz.Log(str(self.House))
                 _plugin.GetHouseNumber.Disconnect()
 
 
@@ -267,7 +252,7 @@ class BasePlugin:
 
 
             if Connection.Name == ("Get Current"):
-#                Domoticz.Error("curre")
+
 
                 CurrentPrice = round(Data["data"]["viewer"]["homes"][self.House]["currentSubscription"]["priceInfo"]["current"]["total"], 3)
                 if _plugin.Unit == "öre":
@@ -319,7 +304,6 @@ class BasePlugin:
         WriteDebug("onHeartbeat")
         HourNow = (datetime.now().hour)
         MinuteNow = (datetime.now().minute)
-#        Domoticz.Log(str(self.AllSettings))
 
         if self.RealTime is True and self.AllSettings is True:
             WriteDebug("onHeartbeatLivePower")
@@ -394,6 +378,7 @@ def UpdateDevice(ID, nValue, sValue, unit, Name):
             Domoticz.Log(Name+" Updated")
     if (ID not in Devices):
         Domoticz.Device(Name=Name, Unit=ID, TypeName="Custom", Used=1, Image=(_plugin.ImageID), Options={"Custom": "0;"+unit}, Description="Desc").Create()
+        Devices[ID].Update(nValue, str(sValue), Name=Name)
 
 def onStart():
     global _plugin
@@ -430,7 +415,7 @@ def CheckFile(Parameter):
             data = data["Config"][0][Parameter]
             if data == "":
                 return
-#                _plugin.AllSettings = False
+
             else:
                 _plugin.AllSettings = True
                 return data
