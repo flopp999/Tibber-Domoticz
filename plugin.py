@@ -11,7 +11,7 @@
         <ul style="list-style-type:square">
             <li>Fetch current price including taxes, minimum power, maximum power, average power, accumulated cost and accumulated consumption, this will happen every hour at minute 0</li>
             <li>Fetch today's minimum, maximum and mean price including taxes, this will happen 10 minutes past midnight</li>
-            <li>Fetch current Power(watt) every 10 seconds if you have Tibber Pulse installed</li>
+            <li>Fetch current Power(watt) every 10 seconds if you have Tibber Watty/Pulse installed</li>
             <li>Possible to get prices including transfering fee</li>
             <li>Debug to file ../plugins/Tibber/Tibber.log</li>
         </ul>
