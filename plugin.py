@@ -3,7 +3,7 @@
 # Author: flopp999
 #
 """
-<plugin key="TibberDev" name="TibberDev API 0.91" author="flopp999" version="0.91" wikilink="https://github.com/flopp999/Tibber-Domoticz" externallink="https://tibber.com/se/invite/8af85f51">
+<plugin key="Tibber" name="Tibber API 0.92" author="flopp999" version="0.92" wikilink="https://github.com/flopp999/Tibber-Domoticz" externallink="https://tibber.com/se/invite/8af85f51">
     <description>
         <h2>Tibber API is used to fetch data from Tibber.com</h2><br/>
         <h2>Support me with a coffee &<a href="https://www.buymeacoffee.com/flopp999">https://www.buymeacoffee.com/flopp999</a></h2><br/>
@@ -224,24 +224,18 @@ class BasePlugin:
 
             if Connection.Name == ("Get HomeID"):
                 for each in Data["data"]["viewer"]["homes"]:
-                    Domoticz.Log("Home "+str(self.House)+" ID = "+str(each["id"]))
+                    Domoticz.Log("Home "+str(self.House)+" has ID = "+str(each["id"]))
                     WriteFile("HomeID_"+str(self.House), self.HomeID)
                 self.HomeID = Data["data"]["viewer"]["homes"][self.House]["id"]
-                Domoticz.Log(str(self.HomeID))
-                Domoticz.Log(str(self.House))
                 WriteDebug("HomeID collected")
                 _plugin.GetHomeID.Disconnect()
 
             if Connection.Name == ("Get House Number"):
-                Domoticz.Log(str(Data))
-                Domoticz.Log(str(len(Data["data"]["viewer"]["homes"])))
                 if len(Data["data"]["viewer"]["homes"]) > 0:
                     for each in Data["data"]["viewer"]["homes"]:
                         if self.HomeID == each["id"]:
-                            Domoticz.Log("Rätt")
                             continue
                         self.House += 1
-                Domoticz.Log(str(self.House))
 
             if Connection.Name == ("Check Real Time Hardware"):
                 for each in Data["data"]["viewer"]["homes"]:
