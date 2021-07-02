@@ -168,16 +168,10 @@ class BasePlugin:
             _plugin.GetHouseNumber.Connect()
 
         self.CheckRealTimeHardware = Domoticz.Connection(Name="Check Real Time Hardware", Transport="TCP/IP", Protocol="HTTPS", Address="api.tibber.com", Port="443")
-#        if not _plugin.CheckRealTimeHardware.Connected() and not _plugin.CheckRealTimeHardware.Connecting():
-#           _plugin.CheckRealTimeHardware.Connect()
 
         self.GetDataCurrent = Domoticz.Connection(Name="Get Current", Transport="TCP/IP", Protocol="HTTPS", Address="api.tibber.com", Port="443")
-#        if not _plugin.GetDataCurrent.Connected() and not _plugin.GetDataCurrent.Connecting():
-#            _plugin.GetDataCurrent.Connect()
 
         self.GetDataMiniMaxMean = Domoticz.Connection(Name="Get MiniMaxMean", Transport="TCP/IP", Protocol="HTTPS", Address="api.tibber.com", Port="443")
-#        if not _plugin.GetDataMiniMaxMean.Connected() and not _plugin.GetDataMiniMaxMean.Connecting() and self.AllSettings:
-#            _plugin.GetDataMiniMaxMean.Connect()
 
     def onConnect(self, Connection, Status, Description):
         if CheckInternet() is True and self.AllSettings is True:
@@ -380,6 +374,7 @@ def UpdateDevice(ID, nValue, sValue, unit, Name):
             Domoticz.Log(Name+" Updated")
     if (ID not in Devices):
         Domoticz.Device(Name=Name, Unit=ID, TypeName="Custom", Used=1, Image=(_plugin.ImageID), Options={"Custom": "0;"+unit}, Description="Desc").Create()
+        Devices[ID].Update(nValue, str(sValue), Name=Name)
 
 def onStart():
     global _plugin
