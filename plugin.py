@@ -3,7 +3,7 @@
 # Author: flopp999
 #
 """
-<plugin key="Tibber" name="Tibber API 0.92" author="flopp999" version="0.92" wikilink="https://github.com/flopp999/Tibber-Domoticz" externallink="https://tibber.com/se/invite/8af85f51">
+<plugin key="Tibber" name="Tibber API 0.93" author="flopp999" version="0.93" wikilink="https://github.com/flopp999/Tibber-Domoticz" externallink="https://tibber.com/se/invite/8af85f51">
     <description>
         <h2>Tibber API is used to fetch data from Tibber.com</h2><br/>
         <h2>Support me with a coffee &<a href="https://www.buymeacoffee.com/flopp999">https://www.buymeacoffee.com/flopp999</a></h2><br/>
@@ -169,7 +169,6 @@ class BasePlugin:
 
         self.CheckRealTimeHardware = Domoticz.Connection(Name="Check Real Time Hardware", Transport="TCP/IP", Protocol="HTTPS", Address="api.tibber.com", Port="443")
 
-
         self.GetDataCurrent = Domoticz.Connection(Name="Get Current", Transport="TCP/IP", Protocol="HTTPS", Address="api.tibber.com", Port="443")
 
         self.GetDataMiniMaxMean = Domoticz.Connection(Name="Get MiniMaxMean", Transport="TCP/IP", Protocol="HTTPS", Address="api.tibber.com", Port="443")
@@ -204,9 +203,10 @@ class BasePlugin:
         Data = json.loads(Data)
 
         if (Status == 200):
+            if "errors" in Data:
+                Domoticz.Log(str(Data["errors"][0]["extensions"]["code"]))
 
-
-            if Connection.Name == ("Get HomeID"):
+            elif Connection.Name == ("Get HomeID"):
 
                 for each in Data["data"]["viewer"]["homes"]:
                     Domoticz.Log("Home "+str(self.House)+" has ID = "+str(each["id"]))
@@ -216,8 +216,7 @@ class BasePlugin:
                 _plugin.GetHomeID.Disconnect()
                 _plugin.GetHouseNumber.Connect()
 
-            if Connection.Name == ("Get House Number"):
-
+            elif Connection.Name == ("Get House Number"):
 
                 if 'errors' in Data:
                     self.AllSettings = False
@@ -230,13 +229,10 @@ class BasePlugin:
                                 continue
                             self.House += 1
                     Domoticz.Log("Using Home ID = "+str(self.HomeID))
-
                     _plugin.CheckRealTimeHardware.Connect()
-
                 _plugin.GetHouseNumber.Disconnect()
 
-
-            if Connection.Name == ("Check Real Time Hardware"):
+            elif Connection.Name == ("Check Real Time Hardware"):
                 for each in Data["data"]["viewer"]["homes"]:
                     if each["id"] == self.HomeID:
                         self.RealTime = each["features"]["realTimeConsumptionEnabled"]
@@ -246,14 +242,11 @@ class BasePlugin:
                 else:
                     Domoticz.Log("Real time hardware is installed and will be fetched every 10 seconds")
                     WriteDebug("Real time hardware is installed")
-
                 _plugin.CheckRealTimeHardware.Disconnect()
                 _plugin.GetDataCurrent.Connect()
 
 
-            if Connection.Name == ("Get Current"):
-
-
+            elif Connection.Name == ("Get Current"):
                 CurrentPrice = round(Data["data"]["viewer"]["homes"][self.House]["currentSubscription"]["priceInfo"]["current"]["total"], 3)
                 if _plugin.Unit == "öre":
                     CurrentPrice = CurrentPrice * 100
@@ -263,13 +256,12 @@ class BasePlugin:
                         UpdateDevice(3, 0, str(round(CurrentPrice+self.Fee, 1)), self.Unit, "Current Price incl. fee")
                     else:
                         UpdateDevice(3, 0, str(round(CurrentPrice+(self.Fee/100), 1)), self.Unit, "Current Price incl. fee")
-
                 WriteDebug("Current Price Updated")
                 self.CurrentPriceUpdated = True
                 _plugin.GetDataCurrent.Disconnect()
                 _plugin.GetDataMiniMaxMean.Connect()
 
-            if Connection.Name == ("Get MiniMaxMean"):
+            elif Connection.Name == ("Get MiniMaxMean"):
                 MiniMaxPrice = []
                 MeanPrice = float(0)
                 for each in Data["data"]["viewer"]["homes"][self.House]["currentSubscription"]["priceInfo"]["today"]:
@@ -319,7 +311,6 @@ class BasePlugin:
                     WriteDebug("Something went wrong during fetching Live Data Power from Tibber")
                     WriteDebug(str(e))
                     pass
-
             asyncio.run(LivePower())
 
         if MinuteNow < 59 and self.LiveDataUpdated is False and self.RealTime is True and self.AllSettings is True:
