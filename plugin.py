@@ -304,10 +304,17 @@ class BasePlugin:
                 transport = WebsocketsTransport(url='wss://api.tibber.com/v1-beta/gql/subscriptions', headers={'Authorization': self.AccessToken})
                 try:
                     async with Client(transport=transport, fetch_schema_from_transport=True, execute_timeout=7) as session:
-                        query = gql("subscription{liveMeasurement(homeId:\"" + self.HomeID + "\"){power}}")
+                        query = gql("subscription{liveMeasurement(homeId:\"" + self.HomeID + "\"){power, powerProduction}}")
                         result = await session.execute(query)
                         self.watt = result["liveMeasurement"]["power"]
-                        UpdateDevice(6, 0, str(self.watt), "watt", "Watt")
+                        self.powerProduction = result["liveMeasurement"]["powerProduction"]
+                        UpdateDevice(6, 0, str(self.watt), "watt", "Power")
+                        while self.powerProduction is None:
+                            result = await session.execute(query)
+                            self.powerProduction = result["liveMeasurement"]["powerProduction"]
+                            Domoticz.Log(str(self.powerProduction))
+                            if self.powerProduction is not None:
+                                UpdateDevice(13, 0, str(self.powerProduction), "watt", "Production")
                 except Exception as e:
                     WriteDebug("Something went wrong during fetching Live Data Power from Tibber")
                     WriteDebug(str(e))
@@ -321,18 +328,20 @@ class BasePlugin:
                 transport = WebsocketsTransport(url='wss://api.tibber.com/v1-beta/gql/subscriptions', headers={'Authorization': self.AccessToken})
                 try:
                     async with Client(transport=transport, fetch_schema_from_transport=True, execute_timeout=7) as session:
-                        query = gql("subscription{liveMeasurement(homeId:\"" + self.HomeID + "\"){minPower, maxPower, averagePower, accumulatedCost, accumulatedConsumption}}")
+                        query = gql("subscription{liveMeasurement(homeId:\"" + self.HomeID + "\"){minPower, maxPower, averagePower, accumulatedCost, accumulatedConsumption, accumulatedProduction}}")
                         result = await session.execute(query)
                         minPower = result["liveMeasurement"]["minPower"]
                         maxPower = result["liveMeasurement"]["maxPower"]
                         avePower = result["liveMeasurement"]["averagePower"]
                         accCost = result["liveMeasurement"]["accumulatedCost"]
                         accCons = result["liveMeasurement"]["accumulatedConsumption"]
+                        accProd = result["liveMeasurement"]["accumulatedProduction"]
                         UpdateDevice(7, 0, str(minPower), "watt", "Minimum Power")
                         UpdateDevice(8, 0, str(maxPower), "watt", "Maximum Power")
                         UpdateDevice(9, 0, str(round(avePower, 0)), "watt", "Average Power")
                         UpdateDevice(10, 0, str(round(accCost, 1)), "kr", "Accumulated Cost")
                         UpdateDevice(11, 0, str(round(accCons, 1)), "kWh", "Accumulated Consumption")
+                        UpdateDevice(12, 0, str(round(accProd, 1)), "kWh", "Accumulated Production")
                         self.LiveDataUpdated = True
                 except Exception as e:
                     WriteDebug("Something went wrong during fetching Live Data from Tibber")
