@@ -3,7 +3,7 @@
 # Author: flopp999
 #
 """
-<plugin key="Tibber" name="Tibber API 0.96" author="flopp999" version="0.96" wikilink="https://github.com/flopp999/Tibber-Domoticz" externallink="https://tibber.com/se/invite/8af85f51">
+<plugin key="Tibber" name="Tibber API 0.97" author="flopp999" version="0.97" wikilink="https://github.com/flopp999/Tibber-Domoticz" externallink="https://tibber.com/se/invite/8af85f51">
     <description>
         <h2>Tibber API is used to fetch data from Tibber.com</h2><br/>
         <h2>Support me with a coffee &<a href="https://www.buymeacoffee.com/flopp999">https://www.buymeacoffee.com/flopp999</a></h2><br/>
@@ -127,21 +127,15 @@ class BasePlugin:
             try:
                 float(Parameters["Mode3"])
                 self.Fee = float(Parameters["Mode3"])
-                WriteFile("Fee", self.Fee)
                 self.AllSettings = True
             except:
                 Domoticz.Log("The Fee is not a number")
 
-        if self.Fee == 0:
-            self.Fee = CheckFile("Fee")
-
         if len(self.AccessToken) < 43:
             Domoticz.Log("Access Token too short")
             WriteDebug("Access Token too short")
-            self.AccessToken = CheckFile("AccessToken")
         else:
             self.AllSettings = True
-            WriteFile("AccessToken", self.AccessToken)
 
         if len(self.HomeID) is not 36:  # will get Home ID from server
             self.HomeID = ""
@@ -149,7 +143,6 @@ class BasePlugin:
             WriteDebug("Home ID not correct")
         else:
             self.AllSettings = True
-            WriteFile("HomeID", self.HomeID)
 
         if "tibberprice" not in Images:
             Domoticz.Image("tibberprice.zip").Create()
@@ -210,7 +203,6 @@ class BasePlugin:
 
                 for each in Data["data"]["viewer"]["homes"]:
                     Domoticz.Log("Home "+str(self.House)+" has ID = "+str(each["id"]))
-                    WriteFile("HomeID_"+str(self.House), self.HomeID)
                 self.HomeID = Data["data"]["viewer"]["homes"][self.House]["id"]
                 WriteDebug("HomeID collected")
                 _plugin.GetHomeID.Disconnect()
@@ -298,27 +290,27 @@ class BasePlugin:
         HourNow = (datetime.now().hour)
         MinuteNow = (datetime.now().minute)
 
-        if self.RealTime is True and self.AllSettings is True:
-            WriteDebug("onHeartbeatLivePower")
-            async def LivePower():
-                transport = WebsocketsTransport(url='wss://api.tibber.com/v1-beta/gql/subscriptions', headers={'Authorization': self.AccessToken})
-                try:
-                    async with Client(transport=transport, fetch_schema_from_transport=True, execute_timeout=7) as session:
-                        query = gql("subscription{liveMeasurement(homeId:\"" + self.HomeID + "\"){power, powerProduction}}")
-                        result = await session.execute(query)
-                        self.watt = result["liveMeasurement"]["power"]
-                        self.powerProduction = result["liveMeasurement"]["powerProduction"]
-                        UpdateDevice(0, str(self.watt), "watt", "Power")
-                        while self.powerProduction is None:
-                            result = await session.execute(query)
-                            self.powerProduction = result["liveMeasurement"]["powerProduction"]
-                            Domoticz.Log(str(self.powerProduction))
-                            if self.powerProduction is not None:
-                                UpdateDevice(0, str(self.powerProduction), "watt", "Production")
-                except Exception as e:
-                    WriteDebug("Something went wrong during fetching Live Data Power from Tibber")
-                    WriteDebug(str(e))
-                    pass
+#        if self.RealTime is True and self.AllSettings is True:
+#            WriteDebug("onHeartbeatLivePower")
+#            async def LivePower():
+#                transport = WebsocketsTransport(url='wss://api.tibber.com/v1-beta/gql/subscriptions', headers={'Authorization': self.AccessToken})
+#                try:
+#                    async with Client(transport=transport, fetch_schema_from_transport=True, execute_timeout=7) as session:
+#                        query = gql("subscription{liveMeasurement(homeId:\"" + self.HomeID + "\"){power, powerProduction}}")
+#                        result = await session.execute(query)
+#                        self.watt = result["liveMeasurement"]["power"]
+#                        self.powerProduction = result["liveMeasurement"]["powerProduction"]
+#                        UpdateDevice(0, str(self.watt), "watt", "Power")
+#                        while self.powerProduction is None:
+#                            result = await session.execute(query)
+#                            self.powerProduction = result["liveMeasurement"]["powerProduction"]
+#                            Domoticz.Log(str(self.powerProduction))
+#                            if self.powerProduction is not None:
+#                                UpdateDevice(0, str(self.powerProduction), "watt", "Production")
+#                except Exception as e:
+#                    WriteDebug("Something went wrong during fetching Live Data Power from Tibber")
+#                    WriteDebug(str(e))
+#                    pass
 #            asyncio.run(LivePower())
 
         if self.RealTime is True and self.AllSettings is True:
@@ -332,10 +324,11 @@ class BasePlugin:
                         query = gql("subscription{liveMeasurement(homeId:\"" + self.HomeID + "\"){power, lastMeterConsumption, accumulatedConsumption, accumulatedProduction, accumulatedConsumptionLastHour, accumulatedProductionLastHour, accumulatedCost, accumulatedReward, minPower, averagePower, maxPower, powerProduction, powerReactive, powerProductionReactive, minPowerProduction, maxPowerProduction, lastMeterProduction, powerFactor, voltagePhase1, voltagePhase2, voltagePhase3, currentL1, currentL2, currentL3}}")
                         result = await session.execute(query)
                         for name,value in result["liveMeasurement"].items():
+                            Domoticz.Log(name)
+                            Domoticz.Log(str(value))
                             if value is not None:
-                                Domoticz.Log(str(each))
                                 UpdateDevice(str(name), str(value))
-                        self.LiveDataUpdated = True
+                    self.LiveDataUpdated = True
                 except Exception as e:
                     WriteDebug("Something went wrong during fetching Live Data from Tibber")
                     WriteDebug(str(e))
@@ -486,39 +479,6 @@ def onConnect(Connection, Status, Description):
 
 def onMessage(Connection, Data):
     _plugin.onMessage(Connection, Data)
-
-
-def CreateFile():
-    if not os.path.isfile(dir+"/Tibber.ini"):
-        data = {}
-        data["Config"] = []
-        data["Config"].append({
-             "AccessToken": ""
-             })
-        with open(dir+"/Tibber.ini", 'w') as outfile:
-            json.dump(data, outfile, indent=4)
-
-
-def CheckFile(Parameter):
-    if os.path.isfile(dir+'/Tibber.ini'):
-        with open(dir+'/Tibber.ini') as jsonfile:
-            data = json.load(jsonfile)
-            data = data["Config"][0][Parameter]
-            if data == "":
-                return
-
-            else:
-                _plugin.AllSettings = True
-                return data
-
-
-def WriteFile(Parameter, text):
-    CreateFile()
-    with open(dir+"/Tibber.ini") as jsonfile:
-        data = json.load(jsonfile)
-    data["Config"][0][Parameter] = text
-    with open(dir+"/Tibber.ini", 'w') as outfile:
-        json.dump(data, outfile, indent=4)
 
 
 def CheckInternet():
