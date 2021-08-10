@@ -3,7 +3,7 @@
 # Author: flopp999
 #
 """
-<plugin key="Tibber" name="Tibber API 0.93" author="flopp999" version="0.93" wikilink="https://github.com/flopp999/Tibber-Domoticz" externallink="https://tibber.com/se/invite/8af85f51">
+<plugin key="Tibber2" name="Tibber API 0.a96" author="flopp999" version="0.a96" wikilink="https://github.com/flopp999/Tibber-Domoticz" externallink="https://tibber.com/se/invite/8af85f51">
     <description>
         <h2>Tibber API is used to fetch data from Tibber.com</h2><br/>
         <h2>Support me with a coffee &<a href="https://www.buymeacoffee.com/flopp999">https://www.buymeacoffee.com/flopp999</a></h2><br/>
@@ -151,10 +151,6 @@ class BasePlugin:
             self.AllSettings = True
             WriteFile("HomeID", self.HomeID)
 
-        if "tibberprice" not in Images:
-            Domoticz.Image("tibberprice.zip").Create()
-
-        self.ImageID = Images["tibberprice"].ID
 
         if Package is False:
             Domoticz.Log("Missing packages")
@@ -250,12 +246,12 @@ class BasePlugin:
                 CurrentPrice = round(Data["data"]["viewer"]["homes"][self.House]["currentSubscription"]["priceInfo"]["current"]["total"], 3)
                 if _plugin.Unit == "öre":
                     CurrentPrice = CurrentPrice * 100
-                UpdateDevice(1, 0, str(round(CurrentPrice, 1)), self.Unit, "Current Price")
+                UpdateDevice("Current Price", str(round(CurrentPrice, 1)))
                 if self.Fee != "":
                     if self.Unit == "öre":
-                        UpdateDevice(3, 0, str(round(CurrentPrice+self.Fee, 1)), self.Unit, "Current Price incl. fee")
+                        UpdateDevice("Current Price incl. fee", str(round(CurrentPrice+self.Fee, 1)))
                     else:
-                        UpdateDevice(3, 0, str(round(CurrentPrice+(self.Fee/100), 1)), self.Unit, "Current Price incl. fee")
+                        UpdateDevice("Current Price incl. fee", str(round(CurrentPrice+(self.Fee/100), 1)))
                 WriteDebug("Current Price Updated")
                 self.CurrentPriceUpdated = True
                 _plugin.GetDataCurrent.Disconnect()
@@ -265,6 +261,7 @@ class BasePlugin:
                 MiniMaxPrice = []
                 MeanPrice = float(0)
                 for each in Data["data"]["viewer"]["homes"][self.House]["currentSubscription"]["priceInfo"]["today"]:
+                    Domoticz.Log(str(each))
                     MiniMaxPrice.append(each["total"])
                     MeanPrice += each["total"]
                 MinimumPrice = min(MiniMaxPrice)
@@ -274,9 +271,9 @@ class BasePlugin:
                     MinimumPrice = MinimumPrice * 100
                     MaximumPrice = MaximumPrice * 100
                     MeanPrice = MeanPrice * 100
-                UpdateDevice(2, 0, str(MeanPrice), self.Unit, "Mean Price")
-                UpdateDevice(4, 0, str(round(MinimumPrice, 1)), self.Unit, "Minimum Price")
-                UpdateDevice(5, 0, str(round(MaximumPrice, 1)), self.Unit, "Maximum Price")
+                UpdateDevice("Mean Price", str(MeanPrice))
+                UpdateDevice("Minimum Price", str(round(MinimumPrice, 1)))
+                UpdateDevice("Maximum Price", str(round(MaximumPrice, 1)))
                 self.MiniMaxMeanPriceUpdated = True
                 WriteDebug("Minimum Price Updated")
                 WriteDebug("Maximum Price Updated")
@@ -303,35 +300,62 @@ class BasePlugin:
                 transport = WebsocketsTransport(url='wss://api.tibber.com/v1-beta/gql/subscriptions', headers={'Authorization': self.AccessToken})
                 try:
                     async with Client(transport=transport, fetch_schema_from_transport=True, execute_timeout=7) as session:
-                        query = gql("subscription{liveMeasurement(homeId:\"" + self.HomeID + "\"){power}}")
+                        query = gql("subscription{liveMeasurement(homeId:\"" + self.HomeID + "\"){power, powerProduction}}")
                         result = await session.execute(query)
                         self.watt = result["liveMeasurement"]["power"]
-                        UpdateDevice(6, 0, str(self.watt), "watt", "Watt")
+                        self.powerProduction = result["liveMeasurement"]["powerProduction"]
+#                        UpdateDevice(0, str(self.watt), "watt", "Power")
+                        while self.powerProduction is None:
+                            result = await session.execute(query)
+                            self.powerProduction = result["liveMeasurement"]["powerProduction"]
+                            Domoticz.Log(str(self.powerProduction))
+                            if self.powerProduction is not None:
+                                UpdateDevice(0, str(self.powerProduction), "watt", "Production")
                 except Exception as e:
                     WriteDebug("Something went wrong during fetching Live Data Power from Tibber")
                     WriteDebug(str(e))
                     pass
-            asyncio.run(LivePower())
+#            asyncio.run(LivePower())
 
-        if MinuteNow < 59 and self.LiveDataUpdated is False and self.RealTime is True and self.AllSettings is True:
+        if self.RealTime is True and self.AllSettings is True:
+#        if MinuteNow < 59 and self.LiveDataUpdated is False and self.RealTime is True and self.AllSettings is True:
             WriteDebug("onHeartbeatLiveData")
 
             async def LiveData():
+
                 transport = WebsocketsTransport(url='wss://api.tibber.com/v1-beta/gql/subscriptions', headers={'Authorization': self.AccessToken})
                 try:
+
+#                    for parameter in ["power", "lastMeterConsumption", "accumulatedConsumption", "accumulatedProduction", "accumulatedConsumptionLastHour", "accumulatedProductionLastHour", "accumulatedCost", "accumulatedReward", "minPower", "averagePower", "maxPower", "powerProduction", "powerReactive", "powerProductionReactive", "minPowerProduction", "maxPowerProduction", "lastMeterProduction", "powerFactor", "voltagePhase1", "voltagePhase2", "voltagePhase3", "currentL1", "currentL2", "currentL3"]:
+
                     async with Client(transport=transport, fetch_schema_from_transport=True, execute_timeout=7) as session:
-                        query = gql("subscription{liveMeasurement(homeId:\"" + self.HomeID + "\"){minPower, maxPower, averagePower, accumulatedCost, accumulatedConsumption}}")
+#                        Domoticz.Log(parameter)
+#                        query = gql("subscription{liveMeasurement(homeId:\"" + self.HomeID + "\"){power}}")
+#                        Domoticz.Log(str(query))
+                        query = gql("subscription{liveMeasurement(homeId:\"" + self.HomeID + "\"){power, lastMeterConsumption, accumulatedConsumption, accumulatedProduction, accumulatedConsumptionLastHour, accumulatedProductionLastHour, accumulatedCost, accumulatedReward, minPower, averagePower, maxPower, powerProduction, powerReactive, powerProductionReactive, minPowerProduction, maxPowerProduction, lastMeterProduction, powerFactor, voltagePhase1, voltagePhase2, voltagePhase3, currentL1, currentL2, currentL3}}")
+
                         result = await session.execute(query)
-                        minPower = result["liveMeasurement"]["minPower"]
-                        maxPower = result["liveMeasurement"]["maxPower"]
-                        avePower = result["liveMeasurement"]["averagePower"]
-                        accCost = result["liveMeasurement"]["accumulatedCost"]
-                        accCons = result["liveMeasurement"]["accumulatedConsumption"]
-                        UpdateDevice(7, 0, str(minPower), "watt", "Minimum Power")
-                        UpdateDevice(8, 0, str(maxPower), "watt", "Maximum Power")
-                        UpdateDevice(9, 0, str(round(avePower, 0)), "watt", "Average Power")
-                        UpdateDevice(10, 0, str(round(accCost, 1)), "kr", "Accumulated Cost")
-                        UpdateDevice(11, 0, str(round(accCons, 1)), "kWh", "Accumulated Consumption")
+
+                        for name,value in result["liveMeasurement"].items():
+                            #Domoticz.Log(str(each.items()))
+#                            a = each.items()
+#                            Domoticz.Log(str(name))
+#                            Domoticz.Log(str(value))
+                            if value is not None:
+                                UpdateDevice(str(name), str(value))
+
+#                        minPower = result["liveMeasurement"]["minPower"]
+#                        maxPower = result["liveMeasurement"]["maxPower"]
+#                        avePower = result["liveMeasurement"]["averagePower"]
+#                        accCost = result["liveMeasurement"]["accumulatedCost"]
+#                        accCons = result["liveMeasurement"]["accumulatedConsumption"]
+#                        accProd = result["liveMeasurement"]["accumulatedProduction"]
+#                        UpdateDevice(0, str(minPower), "watt", "Minimum Power")
+#                        UpdateDevice(0, str(maxPower), "watt", "Maximum Power")
+#                        UpdateDevice(0, str(round(avePower, 0)), "watt", "Average Power")
+#                        UpdateDevice(0, str(round(accCost, 1)), "kr", "Accumulated Cost")
+#                        UpdateDevice(0, str(round(accCons, 1)), "kWh", "Accumulated Consumption")
+#                        UpdateDevice(0, str(round(accProd, 1)), "kWh", "Accumulated Production")
                         self.LiveDataUpdated = True
                 except Exception as e:
                     WriteDebug("Something went wrong during fetching Live Data from Tibber")
@@ -362,13 +386,110 @@ global _plugin
 _plugin = BasePlugin()
 
 
-def UpdateDevice(ID, nValue, sValue, unit, Name):
+def UpdateDevice(Name, sValue):
+    if Name == "Current Price":
+        ID = 1
+        Unit = ""
+    if Name == "Mean Price":
+        ID = 2
+        Unit = ""
+    if Name == "Current Price incl. fee":
+        ID = 3
+        Unit = ""
+    if Name == "Minimum Price":
+        ID = 4
+        Unit = ""
+    if Name == "Maximum Price":
+        ID = 5
+        Unit = ""
+    if Name == "power":
+        ID = 6
+        Unit = ""
+    if Name == "minPower":
+        ID = 7
+        Unit = ""
+    if Name == "maxPower":
+        ID = 8
+        Unit = ""
+    if Name == "averagePower":
+        ID = 9
+        Unit = ""
+    if Name == "accumulatedCost":
+        ID = 10
+        Unit = ""
+    if Name == "accumulatedConsumption":
+        ID = 11
+        Unit = ""
+    if Name == "accumulatedProduction":
+        ID = 12
+        Unit = ""
+    if Name == "powerProduction":
+        ID = 13
+        Unit = ""
+    if Name == "accumulatedConsumptionLastHour":
+        ID = 14
+        Unit = ""
+    if Name == "accumulatedProductionLastHour":
+        ID = 15
+        Unit = ""
+    if Name == "accumulatedReward":
+        ID = 16
+        Unit = ""
+    if Name == "minPower":
+        ID = 17
+        Unit = ""
+    if Name == "averagePower":
+        ID = 18
+        Unit = ""
+    if Name == "maxPower":
+        ID = 19
+        Unit = ""
+    if Name == "lastMeterConsumption":
+        ID = 20
+        Unit = ""
+    if Name == "powerReactive":
+        ID = 21
+        Unit = ""
+    if Name == "powerProductionReactive":
+        ID = 22
+        Unit = ""
+    if Name == "minPowerProduction":
+        ID = 23
+        Unit = ""
+    if Name == "maxPowerProduction":
+        ID = 24
+        Unit = ""
+    if Name == "powerFactor":
+        ID = 25
+        Unit = ""
+    if Name == "voltagePhase1":
+        ID = 26
+        Unit = ""
+    if Name == "voltagePhase2":
+        ID = 27
+        Unit = ""
+    if Name == "voltagePhase3":
+        ID = 28
+        Unit = ""
+    if Name == "currentL1":
+        ID = 28
+        Unit = ""
+    if Name == "currentL2":
+        ID = 28
+        Unit = ""
+    if Name == "currentL3":
+        ID = 28
+        Unit = ""
+
+#    Domoticz.Log(Name+" Updated")
+#    Domoticz.Log(str(ID)+" Updated")
+
     if (ID in Devices):
-        if (Devices[ID].nValue != nValue) or (Devices[ID].sValue != sValue):
-            Devices[ID].Update(nValue, str(sValue))
+        if Devices[ID].sValue != sValue:
+            Devices[ID].Update(0, str(sValue))
             Domoticz.Log(Name+" Updated")
     if (ID not in Devices):
-        Domoticz.Device(Name=Name, Unit=ID, TypeName="Custom", Used=1, Image=(_plugin.ImageID), Options={"Custom": "0;"+unit}, Description="Desc").Create()
+        Domoticz.Device(Name=Name, Unit=ID, TypeName="Custom", Used=1, Options={"Custom": "0;"+Unit}, Description="Desc").Create()
         Devices[ID].Update(nValue, str(sValue), Name=Name)
 
 def onStart():
@@ -437,6 +558,8 @@ def CheckInternet():
             _plugin.CheckRealTimeHardware.Disconnect()
         if _plugin.GetHomeID.Connected() or _plugin.GetHomeID.Connecting():
             _plugin.GetHomeID.Disconnect()
+        if _plugin.GetHouseNumber.Connected() or _plugin.GetHouseNumber.Connecting():
+            _plugin.GetHouseNumber.Disconnect()
         WriteDebug("Internet is not available")
         return False
 
