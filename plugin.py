@@ -3,7 +3,7 @@
 # Author: flopp999
 #
 """
-<plugin key="Tibber" name="Tibber API 0.97" author="flopp999" version="0.97" wikilink="https://github.com/flopp999/Tibber-Domoticz" externallink="https://tibber.com/se/invite/8af85f51">
+<plugin key="Tibber" name="Tibber API 0.98" author="flopp999" version="0.98" wikilink="https://github.com/flopp999/Tibber-Domoticz" externallink="https://tibber.com/se/invite/8af85f51">
     <description>
         <h2>Tibber API is used to fetch data from Tibber.com</h2><br/>
         <h2>Support me with a coffee &<a href="https://www.buymeacoffee.com/flopp999">https://www.buymeacoffee.com/flopp999</a></h2><br/>
@@ -144,10 +144,10 @@ class BasePlugin:
         else:
             self.AllSettings = True
 
-        if "tibberprice" not in Images:
-            Domoticz.Image("tibberprice.zip").Create()
-
-        self.ImageID = Images["tibberprice"].ID
+        if os.path.isfile(dir+'/tibberprice.zip'):
+            if "tibberprice" not in Images:
+                Domoticz.Image("tibberprice.zip").Create()
+            self.ImageID = Images["tibberprice"].ID
 
         if Package is False:
             Domoticz.Log("Missing packages")
@@ -290,38 +290,34 @@ class BasePlugin:
         HourNow = (datetime.now().hour)
         MinuteNow = (datetime.now().minute)
 
-#        if self.RealTime is True and self.AllSettings is True:
-#            WriteDebug("onHeartbeatLivePower")
-#            async def LivePower():
-#                transport = WebsocketsTransport(url='wss://api.tibber.com/v1-beta/gql/subscriptions', headers={'Authorization': self.AccessToken})
-#                try:
-#                    async with Client(transport=transport, fetch_schema_from_transport=True, execute_timeout=7) as session:
-#                        query = gql("subscription{liveMeasurement(homeId:\"" + self.HomeID + "\"){power, powerProduction}}")
-#                        result = await session.execute(query)
-#                        self.watt = result["liveMeasurement"]["power"]
-#                        self.powerProduction = result["liveMeasurement"]["powerProduction"]
-#                        UpdateDevice(0, str(self.watt), "watt", "Power")
-#                        while self.powerProduction is None:
-#                            result = await session.execute(query)
-#                            self.powerProduction = result["liveMeasurement"]["powerProduction"]
-#                            Domoticz.Log(str(self.powerProduction))
-#                            if self.powerProduction is not None:
-#                                UpdateDevice(0, str(self.powerProduction), "watt", "Production")
-#                except Exception as e:
-#                    WriteDebug("Something went wrong during fetching Live Data Power from Tibber")
-#                    WriteDebug(str(e))
-#                    pass
-#            asyncio.run(LivePower())
-
         if self.RealTime is True and self.AllSettings is True:
-#        if MinuteNow < 59 and self.LiveDataUpdated is False and self.RealTime is True and self.AllSettings is True:
+            WriteDebug("onHeartbeatLivePower")
+            async def LivePower():
+                transport = WebsocketsTransport(url='wss://api.tibber.com/v1-beta/gql/subscriptions', headers={'Authorization': self.AccessToken})
+                try:
+                    async with Client(transport=transport, fetch_schema_from_transport=True, execute_timeout=7) as session:
+                        query = gql("subscription{liveMeasurement(homeId:\"" + self.HomeID + "\"){power, minPower, maxPower, powerProduction, powerReactive, powerProductionReactive, minPowerProduction, maxPowerProduction, lastMeterProduction, powerFactor, voltagePhase1, voltagePhase2, voltagePhase3, currentL1, currentL2, currentL3}}")
+                        result = await session.execute(query)
+                        for name,value in result["liveMeasurement"].items():
+                            Domoticz.Log(name)
+                            Domoticz.Log(str(value))
+                            if value is not None:
+                                UpdateDevice(str(name), str(value))
+                    self.LiveDataUpdated = True
+                except Exception as e:
+                    WriteDebug("Something went wrong during fetching Live Data from Tibber")
+                    WriteDebug(str(e))
+                    pass
+            asyncio.run(LivePower())
+
+        if MinuteNow < 59 and self.LiveDataUpdated is False and self.RealTime is True and self.AllSettings is True:
             WriteDebug("onHeartbeatLiveData")
 
             async def LiveData():
                 transport = WebsocketsTransport(url='wss://api.tibber.com/v1-beta/gql/subscriptions', headers={'Authorization': self.AccessToken})
                 try:
                     async with Client(transport=transport, fetch_schema_from_transport=True, execute_timeout=7) as session:
-                        query = gql("subscription{liveMeasurement(homeId:\"" + self.HomeID + "\"){power, lastMeterConsumption, accumulatedConsumption, accumulatedProduction, accumulatedConsumptionLastHour, accumulatedProductionLastHour, accumulatedCost, accumulatedReward, minPower, averagePower, maxPower, powerProduction, powerReactive, powerProductionReactive, minPowerProduction, maxPowerProduction, lastMeterProduction, powerFactor, voltagePhase1, voltagePhase2, voltagePhase3, currentL1, currentL2, currentL3}}")
+                        query = gql("subscription{liveMeasurement(homeId:\"" + self.HomeID + "\"){lastMeterConsumption, accumulatedConsumption, accumulatedProduction, accumulatedConsumptionLastHour, accumulatedProductionLastHour, accumulatedCost, accumulatedReward, averagePower}}")
                         result = await session.execute(query)
                         for name,value in result["liveMeasurement"].items():
                             Domoticz.Log(name)
@@ -452,9 +448,6 @@ def UpdateDevice(Name, sValue):
     if Name == "currentL3":
         ID = 31
         Unit = ""
-
-    Domoticz.Log(Name+" Updated")
-    Domoticz.Log(str(ID)+" Updated")
 
     if (ID in Devices):
         if Devices[ID].sValue != sValue:
