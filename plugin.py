@@ -144,10 +144,10 @@ class BasePlugin:
         else:
             self.AllSettings = True
 
-        if "tibberprice" not in Images:
-            Domoticz.Image("tibberprice.zip").Create()
-
-        self.ImageID = Images["tibberprice"].ID
+        if os.path.isfile(dir+'/tibberprice.zip'):
+            if "tibberprice" not in Images:
+                Domoticz.Image("tibberprice.zip").Create()
+            self.ImageID = Images["tibberprice"].ID
 
         if Package is False:
             Domoticz.Log("Missing packages")
