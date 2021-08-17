@@ -3,7 +3,7 @@
 # Author: flopp999
 #
 """
-<plugin key="Tibber" name="Tibber API 0.97" author="flopp999" version="0.97" wikilink="https://github.com/flopp999/Tibber-Domoticz" externallink="https://tibber.com/se/invite/8af85f51">
+<plugin key="Tibber" name="Tibber API 0.98" author="flopp999" version="0.98" wikilink="https://github.com/flopp999/Tibber-Domoticz" externallink="https://tibber.com/se/invite/8af85f51">
     <description>
         <h2>Tibber API is used to fetch data from Tibber.com</h2><br/>
         <h2>Support me with a coffee &<a href="https://www.buymeacoffee.com/flopp999">https://www.buymeacoffee.com/flopp999</a></h2><br/>
@@ -452,9 +452,6 @@ def UpdateDevice(Name, sValue):
     if Name == "currentL3":
         ID = 31
         Unit = ""
-
-    Domoticz.Log(Name+" Updated")
-    Domoticz.Log(str(ID)+" Updated")
 
     if (ID in Devices):
         if Devices[ID].sValue != sValue:
