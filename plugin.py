@@ -3,7 +3,7 @@
 # Author: flopp999
 #
 """
-<plugin key="Tibber" name="Tibber API 0.98" author="flopp999" version="0.98" wikilink="https://github.com/flopp999/Tibber-Domoticz" externallink="https://tibber.com/se/invite/8af85f51">
+<plugin key="Tibber" name="Tibber API 0.99" author="flopp999" version="0.99" wikilink="https://github.com/flopp999/Tibber-Domoticz" externallink="https://tibber.com/se/invite/8af85f51">
     <description>
         <h2>Tibber API is used to fetch data from Tibber.com</h2><br/>
         <h2>Support me with a coffee &<a href="https://www.buymeacoffee.com/flopp999">https://www.buymeacoffee.com/flopp999</a></h2><br/>
@@ -144,10 +144,10 @@ class BasePlugin:
         else:
             self.AllSettings = True
 
-        if os.path.isfile(dir+'/tibberprice.zip'):
-            if "tibberprice" not in Images:
-                Domoticz.Image("tibberprice.zip").Create()
-            self.ImageID = Images["tibberprice"].ID
+        if os.path.isfile(dir+'/Tibber.zip'):
+            if "Tibber" not in Images:
+                Domoticz.Image("Tibber.zip").Create()
+            self.ImageID = Images["Tibber"].ID
 
         if Package is False:
             Domoticz.Log("Missing packages")
