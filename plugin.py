@@ -192,10 +192,11 @@ class BasePlugin:
 
     def onMessage(self, Connection, Data):
         Status = int(Data["Status"])
-        Data = Data['Data'].decode('UTF-8')
-        Data = json.loads(Data)
 
         if (Status == 200):
+            Data = Data['Data'].decode('UTF-8')
+            Data = json.loads(Data)
+
             if "errors" in Data:
                 Domoticz.Log(str(Data["errors"][0]["extensions"]["code"]))
 
