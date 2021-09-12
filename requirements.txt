@@ -1,4 +1,2 @@
-DateTime>=4.3
-requests>=2.23.0
+requests>=2.21.0
 gql>=3.0.0a5
-asyncio>=3.4.3
