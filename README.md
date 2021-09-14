@@ -1,11 +1,11 @@
 Important, you must Allow new devices, in Domoticz, Setup-Settings-System-Hardware/Devices.
 
-Create a folder with name "Tibber" in "domoticz/plugins"  
+Create a folder with a name that you like in "domoticz/plugins"  
 Put plugin.py, tibberprice.zip, requirements.txt in that folder  
 
 or
 
-Run in domoticz/plugins "sudo git clone https://github.com/flopp999/Tibber-Domoticz.git Tibber"
+In domoticz/plugins run command "sudo git clone https://github.com/flopp999/Tibber-Domoticz.git"
 
 -------------------
 
