@@ -1,2 +1,2 @@
-requests>=2.21.0
-gql>=3.0.0a5
+requests==2.21.0
+gql==3.0.0a5
