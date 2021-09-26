@@ -3,7 +3,7 @@
 # Author: flopp999
 #
 """
-<plugin key="Tibber" name="Tibber API 0.99" author="flopp999" version="0.99" wikilink="https://github.com/flopp999/Tibber-Domoticz" externallink="https://tibber.com/se/invite/8af85f51">
+<plugin key="Tibber" name="Tibber API 1.0" author="flopp999" version="1.0" wikilink="https://github.com/flopp999/Tibber-Domoticz" externallink="https://tibber.com/se/invite/8af85f51">
     <description>
         <h2>Tibber API is used to fetch data from Tibber.com</h2><br/>
         <h2>Support me with a coffee &<a href="https://www.buymeacoffee.com/flopp999">https://www.buymeacoffee.com/flopp999</a></h2><br/>
@@ -51,18 +51,21 @@ import Domoticz
 
 Package = True
 
+ABC = []
+
+try:
+    from datetime import datetime
+except ImportError:
+    Package = False
+
 try:
     import requests, json, os, logging, asyncio
-except ImportError:
+except ImportError as error:
+    ABC.append(error)
     Package = False
 
 try:
     from logging.handlers import RotatingFileHandler
-except ImportError:
-    Package = False
-
-try:
-    from datetime import datetime
 except ImportError:
     Package = False
 
@@ -73,7 +76,8 @@ except ImportError:
 
 try:
     from gql.transport.websockets import WebsocketsTransport
-except ImportError:
+except ImportError as error:
+    ABC.append(error)
     Package = False
 
 dir = os.path.dirname(os.path.realpath(__file__))
@@ -81,6 +85,7 @@ logger = logging.getLogger("Tibber")
 logger.setLevel(logging.INFO)
 handler = RotatingFileHandler(dir+'/Tibber.log', maxBytes=100000, backupCount=5)
 logger.addHandler(handler)
+
 
 
 class BasePlugin:
@@ -116,6 +121,7 @@ class BasePlugin:
         self.Pulse = "No"
         self.House = 0
         self.RealTime = False
+        self.Subscription = True
 
         self.headers = {
             'Host': 'api.tibber.com',
@@ -150,7 +156,8 @@ class BasePlugin:
             self.ImageID = Images["Tibber"].ID
 
         if Package is False:
-            Domoticz.Log("Missing packages")
+            Domoticz.Error("Missing packages")
+            Domoticz.Error(str(ABC))
 
         self.GetHomeID = Domoticz.Connection(Name="Get HomeID", Transport="TCP/IP", Protocol="HTTPS", Address="api.tibber.com", Port="443")
         if not _plugin.GetHomeID.Connected() and not _plugin.GetHomeID.Connecting() and not self.HomeID:
@@ -210,11 +217,9 @@ class BasePlugin:
                 _plugin.GetHouseNumber.Connect()
 
             elif Connection.Name == ("Get House Number"):
-
                 if 'errors' in Data:
                     self.AllSettings = False
                     Domoticz.Error(str(Data["errors"][0]["message"]))
-
                 else:
                     if len(Data["data"]["viewer"]["homes"]) > 0:
                         for each in Data["data"]["viewer"]["homes"]:
@@ -240,19 +245,25 @@ class BasePlugin:
 
 
             elif Connection.Name == ("Get Current"):
-                CurrentPrice = round(Data["data"]["viewer"]["homes"][self.House]["currentSubscription"]["priceInfo"]["current"]["total"], 3)
-                if _plugin.Unit == "öre":
-                    CurrentPrice = CurrentPrice * 100
-                UpdateDevice("Current Price", str(round(CurrentPrice, 1)))
-                if self.Fee != "":
-                    if self.Unit == "öre":
-                        UpdateDevice("Current Price incl. fee", str(round(CurrentPrice+self.Fee, 1)))
-                    else:
-                        UpdateDevice("Current Price incl. fee", str(round(CurrentPrice+(self.Fee/100), 1)))
-                WriteDebug("Current Price Updated")
-                self.CurrentPriceUpdated = True
-                _plugin.GetDataCurrent.Disconnect()
-                _plugin.GetDataMiniMaxMean.Connect()
+                if Data["data"]["viewer"]["homes"][self.House]["currentSubscription"]["priceInfo"]["current"] is None:
+                    self.Subscription = False
+                    _plugin.GetDataCurrent.Disconnect()
+                    Domoticz.Log("Could not find any subscription")
+                else:
+                    self.Subscription = True
+                    CurrentPrice = round(Data["data"]["viewer"]["homes"][self.House]["currentSubscription"]["priceInfo"]["current"]["total"], 3)
+                    if _plugin.Unit == "öre":
+                        CurrentPrice = CurrentPrice * 100
+                    UpdateDevice("Current Price", str(round(CurrentPrice, 1)))
+                    if self.Fee != "":
+                        if self.Unit == "öre":
+                            UpdateDevice("Current Price incl. fee", str(round(CurrentPrice+self.Fee, 1)))
+                        else:
+                            UpdateDevice("Current Price incl. fee", str(round(CurrentPrice+(self.Fee/100), 1)))
+                    WriteDebug("Current Price Updated")
+                    self.CurrentPriceUpdated = True
+                    _plugin.GetDataCurrent.Disconnect()
+                    _plugin.GetDataMiniMaxMean.Connect()
 
             elif Connection.Name == ("Get MiniMaxMean"):
                 MiniMaxPrice = []
@@ -300,8 +311,6 @@ class BasePlugin:
                         query = gql("subscription{liveMeasurement(homeId:\"" + self.HomeID + "\"){power, minPower, maxPower, powerProduction, powerReactive, powerProductionReactive, minPowerProduction, maxPowerProduction, lastMeterProduction, powerFactor, voltagePhase1, voltagePhase2, voltagePhase3, currentL1, currentL2, currentL3}}")
                         result = await session.execute(query)
                         for name,value in result["liveMeasurement"].items():
-                            Domoticz.Log(name)
-                            Domoticz.Log(str(value))
                             if value is not None:
                                 UpdateDevice(str(name), str(value))
                     self.LiveDataUpdated = True
@@ -321,8 +330,6 @@ class BasePlugin:
                         query = gql("subscription{liveMeasurement(homeId:\"" + self.HomeID + "\"){lastMeterConsumption, accumulatedConsumption, accumulatedProduction, accumulatedConsumptionLastHour, accumulatedProductionLastHour, accumulatedCost, accumulatedReward, averagePower}}")
                         result = await session.execute(query)
                         for name,value in result["liveMeasurement"].items():
-                            Domoticz.Log(name)
-                            Domoticz.Log(str(value))
                             if value is not None:
                                 UpdateDevice(str(name), str(value))
                     self.LiveDataUpdated = True
@@ -336,14 +343,14 @@ class BasePlugin:
         if MinuteNow == 59 and self.LiveDataUpdated is True:
             self.LiveDataUpdated = False
 
-        if MinuteNow < 59 and self.CurrentPriceUpdated is False:
+        if MinuteNow < 59 and self.CurrentPriceUpdated is False and self.Subscription is True:
             if not _plugin.GetDataCurrent.Connected() and not _plugin.GetDataCurrent.Connecting():
                 WriteDebug("onHeartbeatGetDataCurrent")
                 _plugin.GetDataCurrent.Connect()
         if MinuteNow == 59 and self.CurrentPriceUpdated is True:
             self.CurrentPriceUpdated = False
 
-        if HourNow >= 0 and MinuteNow >= 10 and MinuteNow < 59 and self.MiniMaxMeanPriceUpdated is False:
+        if HourNow >= 0 and MinuteNow >= 10 and MinuteNow < 59 and self.MiniMaxMeanPriceUpdated is False and self.Subscription is True:
             if not _plugin.GetDataMiniMaxMean.Connected() and not _plugin.GetDataMiniMaxMean.Connecting():
                 WriteDebug("onHeartbeatGetDataMiniMaxMean")
                 _plugin.GetDataMiniMaxMean.Connect()
@@ -354,99 +361,102 @@ class BasePlugin:
 global _plugin
 _plugin = BasePlugin()
 
+def onStart():
+    global _plugin
+    _plugin.onStart()
 
 def UpdateDevice(Name, sValue):
     if Name == "Current Price":
         ID = 1
         Unit = ""
-    if Name == "Mean Price":
+    elif Name == "Mean Price":
         ID = 2
         Unit = ""
-    if Name == "Current Price incl. fee":
+    elif Name == "Current Price incl. fee":
         ID = 3
         Unit = ""
-    if Name == "Minimum Price":
+    elif Name == "Minimum Price":
         ID = 4
         Unit = ""
-    if Name == "Maximum Price":
+    elif Name == "Maximum Price":
         ID = 5
         Unit = ""
-    if Name == "power":
+    elif Name == "power":
         ID = 6
-        Unit = ""
-    if Name == "minPower":
+        Unit = "w"
+    elif Name == "minPower":
         ID = 7
-        Unit = ""
-    if Name == "maxPower":
+        Unit = "w"
+    elif Name == "maxPower":
         ID = 8
-        Unit = ""
-    if Name == "averagePower":
+        Unit = "w"
+    elif Name == "averagePower":
         ID = 9
-        Unit = ""
-    if Name == "accumulatedCost":
+        Unit = "w"
+    elif Name == "accumulatedCost":
         ID = 10
         Unit = ""
-    if Name == "accumulatedConsumption":
+    elif Name == "accumulatedConsumption":
         ID = 11
         Unit = ""
-    if Name == "accumulatedProduction":
+    elif Name == "accumulatedProduction":
         ID = 12
         Unit = ""
-    if Name == "powerProduction":
+    elif Name == "powerProduction":
         ID = 13
         Unit = ""
-    if Name == "accumulatedConsumptionLastHour":
+    elif Name == "accumulatedConsumptionLastHour":
         ID = 14
         Unit = ""
-    if Name == "accumulatedProductionLastHour":
+    elif Name == "accumulatedProductionLastHour":
         ID = 15
         Unit = ""
-    if Name == "accumulatedReward":
+    elif Name == "accumulatedReward":
         ID = 16
         Unit = ""
-    if Name == "minPower":
+    elif Name == "minPower":
         ID = 17
         Unit = ""
-    if Name == "averagePower":
+    elif Name == "averagePower":
         ID = 18
         Unit = ""
-    if Name == "maxPower":
+    elif Name == "maxPower":
         ID = 19
         Unit = ""
-    if Name == "lastMeterConsumption":
+    elif Name == "lastMeterConsumption":
         ID = 20
         Unit = ""
-    if Name == "powerReactive":
+    elif Name == "powerReactive":
         ID = 21
         Unit = ""
-    if Name == "powerProductionReactive":
+    elif Name == "powerProductionReactive":
         ID = 22
         Unit = ""
-    if Name == "minPowerProduction":
+    elif Name == "minPowerProduction":
         ID = 23
         Unit = ""
-    if Name == "maxPowerProduction":
+    elif Name == "maxPowerProduction":
         ID = 24
         Unit = ""
-    if Name == "powerFactor":
+    elif Name == "powerFactor":
         ID = 25
         Unit = ""
-    if Name == "voltagePhase1":
+    elif Name == "voltagePhase1":
         ID = 26
         Unit = ""
-    if Name == "voltagePhase2":
+    elif Name == "voltagePhase2":
         ID = 27
         Unit = ""
-    if Name == "voltagePhase3":
+    elif Name == "voltagePhase3":
         ID = 28
         Unit = ""
-    if Name == "currentL1":
+    elif Name == "currentL1":
         ID = 29
         Unit = ""
-    if Name == "currentL2":
+    elif Name == "currentL2":
         ID = 30
         Unit = ""
-    if Name == "currentL3":
+    elif Name == "currentL3":
         ID = 31
         Unit = ""
 
@@ -457,10 +467,6 @@ def UpdateDevice(Name, sValue):
     if (ID not in Devices):
         Domoticz.Device(Name=Name, Unit=ID, TypeName="Custom", Used=1, Image=(_plugin.ImageID), Options={"Custom": "0;"+Unit}, Description="Desc").Create()
         Devices[ID].Update(nValue, str(sValue), Name=Name)
-
-def onStart():
-    global _plugin
-    _plugin.onStart()
 
 def onStop():
     global _plugin
