@@ -457,7 +457,7 @@ def UpdateDevice(Name, sValue):
             Domoticz.Log(Name+" Updated")
     if (ID not in Devices):
         Domoticz.Device(Name=Name, Unit=ID, TypeName="Custom", Used=1, Image=(_plugin.ImageID), Options={"Custom": "0;"+Unit}, Description="Desc").Create()
-        Devices[ID].Update(nValue, str(sValue), Name=Name)
+        Devices[ID].Update(0, str(sValue), Name=Name)
 
 def onStop():
     global _plugin
