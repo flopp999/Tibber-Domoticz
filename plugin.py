@@ -398,10 +398,10 @@ def UpdateDevice(Name, sValue):
         Unit = ""
     elif Name == "accumulatedConsumption":
         ID = 11
-        Unit = ""
+        Unit = "kWh"
     elif Name == "accumulatedProduction":
         ID = 12
-        Unit = ""
+        Unit = "kWh"
     elif Name == "powerProduction":
         ID = 13
         Unit = ""
@@ -413,15 +413,6 @@ def UpdateDevice(Name, sValue):
         Unit = ""
     elif Name == "accumulatedReward":
         ID = 16
-        Unit = ""
-    elif Name == "minPower":
-        ID = 17
-        Unit = ""
-    elif Name == "averagePower":
-        ID = 18
-        Unit = ""
-    elif Name == "maxPower":
-        ID = 19
         Unit = ""
     elif Name == "lastMeterConsumption":
         ID = 20
