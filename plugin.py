@@ -3,7 +3,7 @@
 # Author: flopp999
 #
 """
-<plugin key="Tibber" name="Tibber API 1.0" author="flopp999" version="1.0" wikilink="https://github.com/flopp999/Tibber-Domoticz" externallink="https://tibber.com/se/invite/8af85f51">
+<plugin key="Tibber" name="Tibber API 1.1" author="flopp999" version="1.1" wikilink="https://github.com/flopp999/Tibber-Domoticz" externallink="https://tibber.com/se/invite/8af85f51">
     <description>
         <h2>Tibber API is used to fetch data from Tibber.com</h2><br/>
         <h2>Support me with a coffee &<a href="https://www.buymeacoffee.com/flopp999">https://www.buymeacoffee.com/flopp999</a></h2><br/>
@@ -308,12 +308,13 @@ class BasePlugin:
                 transport = WebsocketsTransport(url='wss://api.tibber.com/v1-beta/gql/subscriptions', headers={'Authorization': self.AccessToken})
                 try:
                     async with Client(transport=transport, fetch_schema_from_transport=True, execute_timeout=7) as session:
-                        query = gql("subscription{liveMeasurement(homeId:\"" + self.HomeID + "\"){power, minPower, maxPower, powerProduction, powerReactive, powerProductionReactive, minPowerProduction, maxPowerProduction, lastMeterProduction, powerFactor, voltagePhase1, voltagePhase2, voltagePhase3, currentL1, currentL2, currentL3}}")
+                        query = gql("subscription{liveMeasurement(homeId:\"" + self.HomeID + "\"){power, minPower, maxPower, powerProduction, powerReactive, powerProductionReactive, minPowerProduction, maxPowerProduction, lastMeterProduction, powerFactor, voltagePhase1, voltagePhase2, voltagePhase3, currentL1, currentL2, currentL3, signalStrength}}")
                         result = await session.execute(query)
                         for name,value in result["liveMeasurement"].items():
                             if value is not None:
                                 UpdateDevice(str(name), str(value))
                     self.LiveDataUpdated = True
+                    Domoticz.Log("Live power updated")
                 except Exception as e:
                     WriteDebug("Something went wrong during fetching Live Data from Tibber")
                     WriteDebug(str(e))
@@ -327,12 +328,13 @@ class BasePlugin:
                 transport = WebsocketsTransport(url='wss://api.tibber.com/v1-beta/gql/subscriptions', headers={'Authorization': self.AccessToken})
                 try:
                     async with Client(transport=transport, fetch_schema_from_transport=True, execute_timeout=7) as session:
-                        query = gql("subscription{liveMeasurement(homeId:\"" + self.HomeID + "\"){lastMeterConsumption, accumulatedConsumption, accumulatedProduction, accumulatedConsumptionLastHour, accumulatedProductionLastHour, accumulatedCost, accumulatedReward, averagePower}}")
+                        query = gql("subscription{liveMeasurement(homeId:\"" + self.HomeID + "\"){lastMeterConsumption, accumulatedConsumption, accumulatedProduction, accumulatedConsumptionLastHour, accumulatedProductionLastHour, accumulatedCost, accumulatedReward, averagePower, signalStrength}}")
                         result = await session.execute(query)
                         for name,value in result["liveMeasurement"].items():
                             if value is not None:
                                 UpdateDevice(str(name), str(value))
                     self.LiveDataUpdated = True
+                    Domoticz.Log("Live data updated")
                 except Exception as e:
                     WriteDebug("Something went wrong during fetching Live Data from Tibber")
                     WriteDebug(str(e))
@@ -383,16 +385,16 @@ def UpdateDevice(Name, sValue):
         Unit = ""
     elif Name == "power":
         ID = 6
-        Unit = "w"
+        Unit = "W"
     elif Name == "minPower":
         ID = 7
-        Unit = "w"
+        Unit = "W"
     elif Name == "maxPower":
         ID = 8
-        Unit = "w"
+        Unit = "W"
     elif Name == "averagePower":
         ID = 9
-        Unit = "w"
+        Unit = "W"
     elif Name == "accumulatedCost":
         ID = 10
         Unit = ""
@@ -404,57 +406,65 @@ def UpdateDevice(Name, sValue):
         Unit = "kWh"
     elif Name == "powerProduction":
         ID = 13
-        Unit = ""
+        Unit = "kWh"
     elif Name == "accumulatedConsumptionLastHour":
         ID = 14
-        Unit = ""
+        Unit = "kWh"
     elif Name == "accumulatedProductionLastHour":
         ID = 15
-        Unit = ""
+        Unit = "kWh"
     elif Name == "accumulatedReward":
         ID = 16
-        Unit = ""
+        Unit = "kWh"
+    elif Name == "signalStrength":
+        ID = 17
+        Unit = "dBm/%"
     elif Name == "lastMeterConsumption":
         ID = 20
-        Unit = ""
+        Unit = "kWh"
     elif Name == "powerReactive":
         ID = 21
-        Unit = ""
+        Unit = "VAR"
     elif Name == "powerProductionReactive":
         ID = 22
-        Unit = ""
+        Unit = "VAR"
     elif Name == "minPowerProduction":
         ID = 23
-        Unit = ""
+        Unit = "W"
     elif Name == "maxPowerProduction":
         ID = 24
-        Unit = ""
+        Unit = "W"
     elif Name == "powerFactor":
         ID = 25
-        Unit = ""
+        Unit = "kW"
     elif Name == "voltagePhase1":
         ID = 26
-        Unit = ""
+        Unit = "V"
     elif Name == "voltagePhase2":
         ID = 27
-        Unit = ""
+        Unit = "V"
     elif Name == "voltagePhase3":
         ID = 28
-        Unit = ""
+        Unit = "V"
     elif Name == "currentL1":
         ID = 29
-        Unit = ""
+        Unit = "A"
     elif Name == "currentL2":
         ID = 30
-        Unit = ""
+        Unit = "A"
     elif Name == "currentL3":
         ID = 31
+        Unit = "A"
+    elif Name == "lastMeterProduction":
+        ID = 32
         Unit = ""
+    else:
+        Domoticz.Error(Name)
 
     if (ID in Devices):
         if Devices[ID].sValue != sValue:
             Devices[ID].Update(0, str(sValue))
-            Domoticz.Log(Name+" Updated")
+#            Domoticz.Log(Name+" Updated")
     if (ID not in Devices):
         Domoticz.Device(Name=Name, Unit=ID, TypeName="Custom", Used=1, Image=(_plugin.ImageID), Options={"Custom": "0;"+Unit}, Description="Desc").Create()
         Devices[ID].Update(0, str(sValue), Name=Name)
