@@ -3,7 +3,9 @@
 # Author: flopp999
 #
 """
+
 <plugin key="Tibber" name="Tibber API 1.13" author="flopp999" version="1.13" wikilink="https://github.com/flopp999/Tibber-Domoticz" externallink="https://tibber.com/se/invite/8af85f51">
+
     <description>
         <h2>Tibber API is used to fetch data from Tibber.com</h2><br/>
         <h2>Support me with a coffee &<a href="https://www.buymeacoffee.com/flopp999">https://www.buymeacoffee.com/flopp999</a></h2><br/>
@@ -48,7 +50,7 @@
 </plugin>
 """
 import Domoticz
-#from python_graphql_client import GraphqlClient
+
 Package = True
 
 ABC = []
