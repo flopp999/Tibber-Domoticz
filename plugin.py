@@ -3,7 +3,9 @@
 # Author: flopp999
 #
 """
-<plugin key="Tibber" name="Tibber API 1.12" author="flopp999" version="1.12" wikilink="https://github.com/flopp999/Tibber-Domoticz" externallink="https://tibber.com/se/invite/8af85f51">
+
+<plugin key="Tibber" name="Tibber API 1.13" author="flopp999" version="1.13" wikilink="https://github.com/flopp999/Tibber-Domoticz" externallink="https://tibber.com/se/invite/8af85f51">
+
     <description>
         <h2>Tibber API is used to fetch data from Tibber.com</h2><br/>
         <h2>Support me with a coffee &<a href="https://www.buymeacoffee.com/flopp999">https://www.buymeacoffee.com/flopp999</a></h2><br/>
@@ -124,7 +126,7 @@ class BasePlugin:
         self.House = 0
         self.RealTime = False
         self.Subscription = ""
-        self.Count = 2
+        self.Count = 0
 
         self.headers = {
             'Host': 'api.tibber.com',
@@ -253,26 +255,28 @@ class BasePlugin:
 
             elif Connection.Name == ("Get Subscription"):
                 self.Subscription = Data["data"]["viewer"]["homes"][0]["currentSubscription"]["status"]
-                Domoticz.Log(str(self.Subscription))
-                if self.Subscription == "ended":
-                    Domoticz.Log(str(Data))
+#                if self.Subscription == "ended":
+#                    Domoticz.Log(str(Data))
                 if self.Subscription == "running":
+                    self.Subscription = True
                     _plugin.GetDataCurrent.Connect()
                 _plugin.GetSubscription.Disconnect()
 
             elif Connection.Name == ("Get Current"):
 #                _plugin.GetDataCurrent.Disconnect()
-                CurrentPrice = round(Data["data"]["viewer"]["homes"][self.House]["currentSubscription"]["priceInfo"]["current"]["total"], 3)
+                CurrentPrice = round(Data["data"]["viewer"]["homes"][self.House]["currentSubscription"]["priceInfo"]["current"]["total"], 4)
+                Domoticz.Log(str(CurrentPrice))
                 if _plugin.Unit == "öre":
                     CurrentPrice = CurrentPrice * 100
-                    UpdateDevice("Current Price", str(round(CurrentPrice, 1)))
+                UpdateDevice("Current Price", str(round(CurrentPrice, 3)))
                 if self.Fee != "":
                     if self.Unit == "öre":
-                        UpdateDevice("Current Price incl. fee", str(round(CurrentPrice+self.Fee, 1)))
+                        UpdateDevice("Current Price incl. fee", str(round(CurrentPrice+self.Fee, 3)))
                     else:
-                        UpdateDevice("Current Price incl. fee", str(round(CurrentPrice+(self.Fee/100), 1)))
+                        UpdateDevice("Current Price incl. fee", str(round(CurrentPrice+(self.Fee/100), 3)))
                 WriteDebug("Current Price Updated")
-                self.CurrentPriceUpdated = True
+                Domoticz.Log("Current Price Updated")
+#                self.CurrentPriceUpdated = True
 #                _plugin.GetDataCurrent.Disconnect()
                 _plugin.GetDataMiniMaxMean.Connect()
 
@@ -280,7 +284,7 @@ class BasePlugin:
                 MiniMaxPrice = []
                 MeanPrice = float(0)
                 for each in Data["data"]["viewer"]["homes"][self.House]["currentSubscription"]["priceInfo"]["today"]:
-                    Domoticz.Log(str(each))
+#                    Domoticz.Log(str(each))
                     MiniMaxPrice.append(each["total"])
                     MeanPrice += each["total"]
                 MinimumPrice = min(MiniMaxPrice)
@@ -291,12 +295,15 @@ class BasePlugin:
                     MaximumPrice = MaximumPrice * 100
                     MeanPrice = MeanPrice * 100
                 UpdateDevice("Mean Price", str(MeanPrice))
-                UpdateDevice("Minimum Price", str(round(MinimumPrice, 1)))
-                UpdateDevice("Maximum Price", str(round(MaximumPrice, 1)))
+                UpdateDevice("Minimum Price", str(round(MinimumPrice, 3)))
+                UpdateDevice("Maximum Price", str(round(MaximumPrice, 3)))
                 self.MiniMaxMeanPriceUpdated = True
                 WriteDebug("Minimum Price Updated")
                 WriteDebug("Maximum Price Updated")
                 WriteDebug("Mean Price Updated")
+                Domoticz.Log("Minimum Price Updated")
+                Domoticz.Log("Maximum Price Updated")
+                Domoticz.Log("Mean Price Updated")
                 _plugin.GetDataMiniMaxMean.Disconnect()
 
         else:
@@ -314,12 +321,12 @@ class BasePlugin:
         MinuteNow = (datetime.now().minute)
         self.Count += 1
 
-        if self.Count >= 3 and self.RealTime is True and self.AllSettings is True:
+        if self.Count >= 5 and self.RealTime is True and self.AllSettings is True:
             WriteDebug("onHeartbeatLivePower")
             async def LivePower():
                 transport = WebsocketsTransport(url='wss://api.tibber.com/v1-beta/gql/subscriptions', headers={'Authorization': self.AccessToken})
                 try:
-                    async with Client(transport=transport, fetch_schema_from_transport=True, execute_timeout=15) as session:
+                    async with Client(transport=transport, fetch_schema_from_transport=True, execute_timeout=9) as session:
                         query = gql("subscription{liveMeasurement(homeId:\"" + self.HomeID + "\"){power, minPower, maxPower, powerProduction, powerReactive, powerProductionReactive, minPowerProduction, maxPowerProduction, lastMeterProduction, powerFactor, voltagePhase1, voltagePhase2, voltagePhase3, currentL1, currentL2, currentL3, signalStrength}}")
                         result = await session.execute(query)
                         for name,value in result["liveMeasurement"].items():
@@ -330,22 +337,24 @@ class BasePlugin:
                 except Exception as e:
 #                    Domoticz.Log(str(traceback.format_exc()))
 #                    Domoticz.Log(str(sys.exc_info()[0]))
-                    WriteDebug("Something went wrong during fetching Live Data from Tibber")
+                    WriteDebug("Something went wrong during fetching Live Power from Tibber")
                     WriteDebug(str(e))
                     pass
             asyncio.run(LivePower())
             self.Count = 0
 
 
-        if self.Count >= 3 and MinuteNow < 59 and self.LiveDataUpdated is False and self.RealTime is True and self.AllSettings is True:
+        if self.Count == 4 and MinuteNow <= 59 and self.LiveDataUpdated is False and self.RealTime is True and self.AllSettings is True:
 #        if MinuteNow < 59:
             WriteDebug("onHeartbeatLiveData")
 
             async def LiveData():
                 transport = WebsocketsTransport(url='wss://api.tibber.com/v1-beta/gql/subscriptions', headers={'Authorization': self.AccessToken})
                 try:
-                    async with Client(transport=transport, fetch_schema_from_transport=True, execute_timeout=15) as session:
+                    async with Client(transport=transport, fetch_schema_from_transport=True, execute_timeout=9) as session:
                         query = gql("subscription{liveMeasurement(homeId:\"" + self.HomeID + "\"){lastMeterConsumption, accumulatedConsumption, accumulatedProduction, accumulatedConsumptionLastHour, accumulatedProductionLastHour, accumulatedCost, accumulatedReward, averagePower}}")
+
+#                        query = gql("subscription{liveMeasurement(homeId:\"" + self.HomeID + "\"){lastMeterConsumption}}")
                         result = await session.execute(query)
                         for name,value in result["liveMeasurement"].items():
                             if value is not None:
@@ -353,29 +362,30 @@ class BasePlugin:
                     self.LiveDataUpdated = True
                     Domoticz.Log("Live data updated")
                 except Exception as e:
-                    Domoticz.Log(str(traceback.format_exc()))
-                    Domoticz.Log(str(sys.exc_info()[0]))
+#                    Domoticz.Error(str(traceback.format_exc()))
+#                    Domoticz.Error(str(sys.exc_info()[0]))
                     WriteDebug("Something went wrong during fetching Live Data from Tibber")
                     WriteDebug(str(e))
                     pass
 
-#            asyncio.run(LiveData())
+            asyncio.run(LiveData())
 
-        if MinuteNow == 17 or MinuteNow == 59 and self.LiveDataUpdated is True:
+        if self.Count == 1 and MinuteNow == 59 and self.LiveDataUpdated is True:
             self.LiveDataUpdated = False
 
-        if MinuteNow < 59 and self.CurrentPriceUpdated is False and self.Subscription is True:
+        if self.Count == 2 and MinuteNow < 59 and self.CurrentPriceUpdated is False and self.Subscription is True:
             if not _plugin.GetDataCurrent.Connected() and not _plugin.GetDataCurrent.Connecting():
                 WriteDebug("onHeartbeatGetDataCurrent")
+                Domoticz.Log("CurrentPrice Updated")
                 _plugin.GetDataCurrent.Connect()
-        if MinuteNow == 59 and self.CurrentPriceUpdated is True:
+        if self.Count == 1 and MinuteNow == 59 and self.CurrentPriceUpdated is True:
             self.CurrentPriceUpdated = False
 
-        if HourNow >= 0 and MinuteNow >= 10 and MinuteNow < 59 and self.MiniMaxMeanPriceUpdated is False and self.Subscription is True:
+        if self.Count == 3 and HourNow >= 0 and MinuteNow >= 10 and MinuteNow < 59 and self.MiniMaxMeanPriceUpdated is False and self.Subscription is True:
             if not _plugin.GetDataMiniMaxMean.Connected() and not _plugin.GetDataMiniMaxMean.Connecting():
                 WriteDebug("onHeartbeatGetDataMiniMaxMean")
                 _plugin.GetDataMiniMaxMean.Connect()
-        if HourNow == 23 and MinuteNow == 59 and self.MiniMaxMeanPriceUpdated is True:
+        if self.Count == 1 and HourNow == 23 and MinuteNow == 59 and self.MiniMaxMeanPriceUpdated is True:
             self.MiniMaxMeanPriceUpdated = False
 
 
@@ -387,6 +397,8 @@ def onStart():
     _plugin.onStart()
 
 def UpdateDevice(Name, sValue):
+#    Domoticz.Log(str(Name))
+#    Domoticz.Log(str(sValue))
     if Name == "Current Price":
         ID = 1
         Unit = ""
@@ -485,7 +497,7 @@ def UpdateDevice(Name, sValue):
 
     if (ID in Devices):
         if Devices[ID].sValue != sValue:
-            Devices[ID].Update(0, str(sValue))
+            Devices[ID].Update(0 , str(sValue), Name=Name)
 
 def onStop():
     global _plugin
