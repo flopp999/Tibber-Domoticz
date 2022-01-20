@@ -3,10 +3,11 @@
 # Author: flopp999
 #
 """
-<plugin key="Tibber" name="Tibber API 1.13" author="flopp999" version="1.13" wikilink="https://github.com/flopp999/Tibber-Domoticz" externallink="https://tibber.com/se/invite/8af85f51">
+<plugin key="Tibber" name="Tibber API 1.14" author="flopp999" version="1.14" wikilink="https://github.com/flopp999/Tibber-Domoticz" externallink="https://tibber.com/se/invite/8af85f51">
     <description>
         <h2>Tibber API is used to fetch data from Tibber.com</h2><br/>
         <h2>Support me with a coffee &<a href="https://www.buymeacoffee.com/flopp999">https://www.buymeacoffee.com/flopp999</a></h2><br/>
+        <h2>Support me with a donation on paypal &<a href="https://www.paypal.com/paypalme/flopp999">https://www.paypal.com/paypalme/flopp999</a></h2><br/>
         <h3>Features</h3>
         <ul style="list-style-type:square">
             <li>Fetch current price including taxes, minimum power, maximum power, average power, accumulated cost and accumulated consumption, this will happen every hour at minute 0</li>
@@ -36,6 +37,12 @@
             <options>
                 <option label="öre" value="öre"/>
                 <option label="kr" value="kr" default="true" />
+            </options>
+        </param>
+        <param field="Mode5" label="Create device for Pulse/Watty" width="50px">
+            <options>
+                <option label="Yes" value="Yes" default="true" />
+                <option label="No" value="No"/>
             </options>
         </param>
         <param field="Mode6" label="Debug to file (Tibber.log)" width="50px">
@@ -125,6 +132,7 @@ class BasePlugin:
         self.RealTime = False
         self.Subscription = ""
         self.Count = 0
+        self.CreateRealTime = Parameters["Mode5"]
 
         self.headers = {
             'Host': 'api.tibber.com',
@@ -171,10 +179,8 @@ class BasePlugin:
             _plugin.GetHouseNumber.Connect()
 
         self.CheckRealTimeHardware = Domoticz.Connection(Name="Check Real Time Hardware", Transport="TCP/IP", Protocol="HTTPS", Address="api.tibber.com", Port="443")
-
         self.GetDataCurrent = Domoticz.Connection(Name="Get Current", Transport="TCP/IP", Protocol="HTTPS", Address="api.tibber.com", Port="443")
         self.GetSubscription = Domoticz.Connection(Name="Get Subscription", Transport="TCP/IP", Protocol="HTTPS", Address="api.tibber.com", Port="443")
-
         self.GetDataMiniMaxMean = Domoticz.Connection(Name="Get MiniMaxMean", Transport="TCP/IP", Protocol="HTTPS", Address="api.tibber.com", Port="443")
 
     def onConnect(self, Connection, Status, Description):
@@ -235,7 +241,8 @@ class BasePlugin:
                                 continue
                             self.House += 1
                     Domoticz.Log("Using Home ID = "+str(self.HomeID))
-                    _plugin.CheckRealTimeHardware.Connect()
+                    if self.CreateRealTime == "Yes":
+                        _plugin.CheckRealTimeHardware.Connect()
                 _plugin.GetHouseNumber.Disconnect()
 
             elif Connection.Name == ("Check Real Time Hardware"):
@@ -246,7 +253,7 @@ class BasePlugin:
                     Domoticz.Log("No real time hardware is installed")
                     WriteDebug("No real time hardware is installed")
                 else:
-                    Domoticz.Log("Real time hardware is installed and will be fetched every 10 seconds")
+                    Domoticz.Log("Real time hardware is installed and will be fetched every 50 seconds")
                     WriteDebug("Real time hardware is installed")
                 _plugin.CheckRealTimeHardware.Disconnect()
                 _plugin.GetSubscription.Connect()
