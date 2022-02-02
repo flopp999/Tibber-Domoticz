@@ -3,7 +3,7 @@
 # Author: flopp999
 #
 """
-<plugin key="Tibber" name="Tibber API 1.14" author="flopp999" version="1.14" wikilink="https://github.com/flopp999/Tibber-Domoticz" externallink="https://tibber.com/se/invite/8af85f51">
+<plugin key="Tibber" name="Tibber API 1.2" author="flopp999" version="1.2" wikilink="https://github.com/flopp999/Tibber-Domoticz" externallink="https://tibber.com/se/invite/8af85f51">
     <description>
         <h2>Tibber API is used to fetch data from Tibber.com</h2><br/>
         <h2>Support me with a coffee &<a href="https://www.buymeacoffee.com/flopp999">https://www.buymeacoffee.com/flopp999</a></h2><br/>
@@ -55,7 +55,7 @@
 </plugin>
 """
 import Domoticz
-#from python_graphql_client import GraphqlClient
+
 Package = True
 
 ABC = []
@@ -281,8 +281,8 @@ class BasePlugin:
                         UpdateDevice("Current Price incl. fee", str(round(CurrentPrice+(self.Fee/100), 3)))
                 WriteDebug("Current Price Updated")
                 Domoticz.Log("Current Price Updated")
-#                self.CurrentPriceUpdated = True
-#                _plugin.GetDataCurrent.Disconnect()
+                self.CurrentPriceUpdated = True
+                _plugin.GetDataCurrent.Disconnect()
                 _plugin.GetDataMiniMaxMean.Connect()
 
             elif Connection.Name == ("Get MiniMaxMean"):
@@ -326,7 +326,26 @@ class BasePlugin:
         MinuteNow = (datetime.now().minute)
         self.Count += 1
 
-        if self.Count >= 5 and self.RealTime is True and self.AllSettings is True:
+        WriteDebug("onHeartbeatLivePower")
+        async def LivePowerEvery():
+            transport = WebsocketsTransport(url='wss://api.tibber.com/v1-beta/gql/subscriptions', headers={'Authorization': self.AccessToken})
+            try:
+                async with Client(transport=transport, fetch_schema_from_transport=True, execute_timeout=9) as session:
+                    query = gql("subscription{liveMeasurement(homeId:\"" + self.HomeID + "\"){power, powerProduction, voltagePhase1, voltagePhase2, voltagePhase3, currentL1, currentL2, currentL3}}")
+                    result = await session.execute(query)
+                    for name,value in result["liveMeasurement"].items():
+                        if value is not None:
+                            UpdateDevice(str(name), str(value))
+                Domoticz.Log("Live power updated")
+            except Exception as e:
+#                    Domoticz.Log(str(traceback.format_exc()))
+#                    Domoticz.Log(str(sys.exc_info()[0]))
+                WriteDebug("Something went wrong during fetching Live Power from Tibber")
+                WriteDebug(str(e))
+                pass
+        asyncio.run(LivePowerEvery())
+
+        if self.Count == 5 and self.RealTime is True and self.AllSettings is True:
             WriteDebug("onHeartbeatLivePower")
             async def LivePower():
                 transport = WebsocketsTransport(url='wss://api.tibber.com/v1-beta/gql/subscriptions', headers={'Authorization': self.AccessToken})
@@ -346,7 +365,6 @@ class BasePlugin:
                     WriteDebug(str(e))
                     pass
             asyncio.run(LivePower())
-            self.Count = 0
 
 
         if self.Count == 4 and MinuteNow <= 59 and self.LiveDataUpdated is False and self.RealTime is True and self.AllSettings is True:
@@ -392,6 +410,12 @@ class BasePlugin:
                 _plugin.GetDataMiniMaxMean.Connect()
         if self.Count == 1 and HourNow == 23 and MinuteNow == 59 and self.MiniMaxMeanPriceUpdated is True:
             self.MiniMaxMeanPriceUpdated = False
+
+
+        if self.Count >= 5:
+            self.Count = 0
+
+
 
 
 global _plugin
@@ -499,10 +523,11 @@ def UpdateDevice(Name, sValue):
 
     if (ID not in Devices):
         Domoticz.Device(Name=Name, Unit=ID, TypeName="Custom", Used=1, Image=(_plugin.ImageID), Options={"Custom": "0;"+Unit}, Description="Desc").Create()
+        Devices[ID].Update(0 , str(sValue), Name=Name)
 
     if (ID in Devices):
         if Devices[ID].sValue != sValue:
-            Devices[ID].Update(0 , str(sValue), Name=Name)
+            Devices[ID].Update(0 , str(sValue))
 
 def onStop():
     global _plugin
