@@ -3,7 +3,7 @@
 # Author: flopp999
 #
 """
-<plugin key="Tibber" name="Tibber API 1.15" author="flopp999" version="1.15" wikilink="https://github.com/flopp999/Tibber-Domoticz" externallink="https://tibber.com/se/invite/8af85f51">
+<plugin key="Tibber" name="Tibber API 1.16" author="flopp999" version="1.16" wikilink="https://github.com/flopp999/Tibber-Domoticz" externallink="https://tibber.com/se/invite/8af85f51">
     <description>
         <h2>Tibber API is used to fetch data from Tibber.com</h2><br/>
         <h2>Support me with a coffee &<a href="https://www.buymeacoffee.com/flopp999">https://www.buymeacoffee.com/flopp999</a></h2><br/>
@@ -30,7 +30,7 @@
         <h3>Configuration</h3>
     </description>
     <params>
-        <param field="Mode1" label="Tibber Access Token" width="460px" required="true" default="d1007ead2dc84a2b82f0de19451c5fb22112f7ae11d19bf2bedb224a003ff74a"/>
+        <param field="Mode1" label="Tibber Access Token" width="460px" required="true" default="476c477d8a039529478ebd690d35ddd80e3308ffc49b59c65b142321aee963a4"/>
         <param field="Mode4" label="Home ID" width="350px" required="false" default="Copy from Domoticz Log or Tibber Develop webpage"/>
         <param field="Mode3" label="Transfer fee(öre)" width="50px" required="false" default="0"/>
         <param field="Mode2" label="Unit for devices" width="50px">
@@ -212,6 +212,7 @@ class BasePlugin:
 
 
     def onMessage(self, Connection, Data):
+        Domoticz.Log(str(Data))
         Status = int(Data["Status"])
 
         if (Status == 200):
@@ -325,25 +326,27 @@ class BasePlugin:
         HourNow = (datetime.now().hour)
         MinuteNow = (datetime.now().minute)
         self.Count += 1
+        Domoticz.Log(str(self.Count))
 
         WriteDebug("onHeartbeatLivePower")
-        async def LivePowerEvery():
-            transport = WebsocketsTransport(url='wss://api.tibber.com/v1-beta/gql/subscriptions', headers={'Authorization': self.AccessToken})
-            try:
-                async with Client(transport=transport, fetch_schema_from_transport=True, execute_timeout=9) as session:
-                    query = gql("subscription{liveMeasurement(homeId:\"" + self.HomeID + "\"){power, powerProduction, voltagePhase1, voltagePhase2, voltagePhase3, currentL1, currentL2, currentL3}}")
-                    result = await session.execute(query)
-                    for name,value in result["liveMeasurement"].items():
-                        if value is not None:
-                            UpdateDevice(str(name), str(value))
-                Domoticz.Log("Live power updated")
-            except Exception as e:
+        if self.RealTime is True and self.AllSettings is True:
+            async def LivePowerEvery():
+                transport = WebsocketsTransport(url='wss://api.tibber.com/v1-beta/gql/subscriptions', headers={'Authorization': self.AccessToken})
+                try:
+                    async with Client(transport=transport, fetch_schema_from_transport=True, execute_timeout=9) as session:
+                        query = gql("subscription{liveMeasurement(homeId:\"" + self.HomeID + "\"){power, powerProduction, voltagePhase1, voltagePhase2, voltagePhase3, currentL1, currentL2, currentL3}}")
+                        result = await session.execute(query)
+                        for name,value in result["liveMeasurement"].items():
+                            if value is not None:
+                                UpdateDevice(str(name), str(value))
+                    Domoticz.Log("Live power updated")
+                except Exception as e:
 #                    Domoticz.Log(str(traceback.format_exc()))
 #                    Domoticz.Log(str(sys.exc_info()[0]))
-                WriteDebug("Something went wrong during fetching Live Power from Tibber")
-                WriteDebug(str(e))
-                pass
-        asyncio.run(LivePowerEvery())
+                    WriteDebug("Something went wrong during fetching Live Power from Tibber")
+                    WriteDebug(str(e))
+                    pass
+            asyncio.run(LivePowerEvery())
 
         if self.Count == 5 and self.RealTime is True and self.AllSettings is True:
             WriteDebug("onHeartbeatLivePower")
@@ -351,7 +354,7 @@ class BasePlugin:
                 transport = WebsocketsTransport(url='wss://api.tibber.com/v1-beta/gql/subscriptions', headers={'Authorization': self.AccessToken})
                 try:
                     async with Client(transport=transport, fetch_schema_from_transport=True, execute_timeout=9) as session:
-                        query = gql("subscription{liveMeasurement(homeId:\"" + self.HomeID + "\"){power, minPower, maxPower, powerProduction, powerReactive, powerProductionReactive, minPowerProduction, maxPowerProduction, lastMeterProduction, powerFactor, voltagePhase1, voltagePhase2, voltagePhase3, currentL1, currentL2, currentL3, signalStrength}}")
+                        query = gql("subscription{liveMeasurement(homeId:\"" + self.HomeID + "\"){minPower, maxPower, powerReactive, powerProductionReactive, minPowerProduction, maxPowerProduction, lastMeterProduction, powerFactor, signalStrength}}")
                         result = await session.execute(query)
                         for name,value in result["liveMeasurement"].items():
                             if value is not None:
