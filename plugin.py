@@ -3,7 +3,7 @@
 # Author: flopp999
 #
 """
-<plugin key="Tibber" name="Tibber API 1.15" author="flopp999" version="1.15" wikilink="https://github.com/flopp999/Tibber-Domoticz" externallink="https://tibber.com/se/invite/8af85f51">
+<plugin key="Tibber" name="Tibber API 1.16" author="flopp999" version="1.16" wikilink="https://github.com/flopp999/Tibber-Domoticz" externallink="https://tibber.com/se/invite/8af85f51">
     <description>
         <h2>Tibber API is used to fetch data from Tibber.com</h2><br/>
         <h2>Support me with a coffee &<a href="https://www.buymeacoffee.com/flopp999">https://www.buymeacoffee.com/flopp999</a></h2><br/>
@@ -329,23 +329,24 @@ class BasePlugin:
         Domoticz.Log(str(self.Count))
 
         WriteDebug("onHeartbeatLivePower")
-        async def LivePowerEvery():
-            transport = WebsocketsTransport(url='wss://api.tibber.com/v1-beta/gql/subscriptions', headers={'Authorization': self.AccessToken})
-            try:
-                async with Client(transport=transport, fetch_schema_from_transport=True, execute_timeout=9) as session:
-                    query = gql("subscription{liveMeasurement(homeId:\"" + self.HomeID + "\"){power, powerProduction, voltagePhase1, voltagePhase2, voltagePhase3, currentL1, currentL2, currentL3}}")
-                    result = await session.execute(query)
-                    for name,value in result["liveMeasurement"].items():
-                        if value is not None:
-                            UpdateDevice(str(name), str(value))
-                Domoticz.Log("Live power updated")
-            except Exception as e:
+        if self.RealTime is True and self.AllSettings is True:
+            async def LivePowerEvery():
+                transport = WebsocketsTransport(url='wss://api.tibber.com/v1-beta/gql/subscriptions', headers={'Authorization': self.AccessToken})
+                try:
+                    async with Client(transport=transport, fetch_schema_from_transport=True, execute_timeout=9) as session:
+                        query = gql("subscription{liveMeasurement(homeId:\"" + self.HomeID + "\"){power, powerProduction, voltagePhase1, voltagePhase2, voltagePhase3, currentL1, currentL2, currentL3}}")
+                        result = await session.execute(query)
+                        for name,value in result["liveMeasurement"].items():
+                            if value is not None:
+                                UpdateDevice(str(name), str(value))
+                    Domoticz.Log("Live power updated")
+                except Exception as e:
 #                    Domoticz.Log(str(traceback.format_exc()))
 #                    Domoticz.Log(str(sys.exc_info()[0]))
-                WriteDebug("Something went wrong during fetching Live Power from Tibber")
-                WriteDebug(str(e))
-                pass
-        asyncio.run(LivePowerEvery())
+                    WriteDebug("Something went wrong during fetching Live Power from Tibber")
+                    WriteDebug(str(e))
+                    pass
+            asyncio.run(LivePowerEvery())
 
         if self.Count == 5 and self.RealTime is True and self.AllSettings is True:
             WriteDebug("onHeartbeatLivePower")
