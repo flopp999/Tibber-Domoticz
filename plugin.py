@@ -3,7 +3,7 @@
 # Author: flopp999
 #
 """
-<plugin key="Tibber" name="Tibber API 1.16" author="flopp999" version="1.16" wikilink="https://github.com/flopp999/Tibber-Domoticz" externallink="https://tibber.com/se/invite/8af85f51">
+<plugin key="Tibber" name="Tibber API 1.17" author="flopp999" version="1.17" wikilink="https://github.com/flopp999/Tibber-Domoticz" externallink="https://tibber.com/se/invite/8af85f51">
     <description>
         <h2>Tibber API is used to fetch data from Tibber.com</h2><br/>
         <h2>Support me with a coffee &<a href="https://www.buymeacoffee.com/flopp999">https://www.buymeacoffee.com/flopp999</a></h2><br/>
@@ -245,6 +245,7 @@ class BasePlugin:
                     if self.CreateRealTime == "Yes":
                         _plugin.CheckRealTimeHardware.Connect()
                 _plugin.GetHouseNumber.Disconnect()
+                _plugin.GetSubscription.Connect()
 
             elif Connection.Name == ("Check Real Time Hardware"):
                 for each in Data["data"]["viewer"]["homes"]:
@@ -257,7 +258,6 @@ class BasePlugin:
                     Domoticz.Log("Real time hardware is installed and will be fetched every 50 seconds")
                     WriteDebug("Real time hardware is installed")
                 _plugin.CheckRealTimeHardware.Disconnect()
-                _plugin.GetSubscription.Connect()
 
             elif Connection.Name == ("Get Subscription"):
                 self.Subscription = Data["data"]["viewer"]["homes"][0]["currentSubscription"]["status"]
@@ -328,8 +328,8 @@ class BasePlugin:
         self.Count += 1
         Domoticz.Log(str(self.Count))
 
-        WriteDebug("onHeartbeatLivePower")
         if self.RealTime is True and self.AllSettings is True:
+            WriteDebug("onHeartbeatLivePowerEvery")
             async def LivePowerEvery():
                 transport = WebsocketsTransport(url='wss://api.tibber.com/v1-beta/gql/subscriptions', headers={'Authorization': self.AccessToken})
                 try:
@@ -511,12 +511,22 @@ def UpdateDevice(Name, sValue):
         Unit = "V"
     elif Name == "currentL1":
         ID = 29
+#        ID = 55
+#        current = sValue
         Unit = "A"
     elif Name == "currentL2":
         ID = 30
+#        ID = 55
+#        current += ";"
+#        current += sValue
         Unit = "A"
     elif Name == "currentL3":
         ID = 31
+#        ID = 55
+#        current += ";"
+#        current += sValue
+#        sValue = current
+#        Domoticz.Log(str(current))
         Unit = "A"
     elif Name == "lastMeterProduction":
         ID = 32
@@ -526,9 +536,14 @@ def UpdateDevice(Name, sValue):
 
     if (ID not in Devices):
         Domoticz.Device(Name=Name, Unit=ID, TypeName="Custom", Used=1, Image=(_plugin.ImageID), Options={"Custom": "0;"+Unit}, Description="Desc").Create()
+#        if ID == 55:
+#            Devices[ID].Update(0, str(sValue), Type=250, Subtype=1)
         Devices[ID].Update(0 , str(sValue), Name=Name)
 
     if (ID in Devices):
+#        if Name == "currentL1" or Name == "currentL2":
+#            pass
+#        else:
         if Devices[ID].sValue != sValue:
             Devices[ID].Update(0 , str(sValue))
 
