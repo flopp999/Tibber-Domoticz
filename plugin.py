@@ -3,7 +3,7 @@
 # Author: flopp999
 #
 """
-<plugin key="Tibber" name="Tibber API 1.21" author="flopp999" version="1.21" wikilink="https://github.com/flopp999/Tibber-Domoticz" externallink="https://tibber.com/se/invite/8af85f51">
+<plugin key="Tibber" name="Tibber API 1.22" author="flopp999" version="1.22" wikilink="https://github.com/flopp999/Tibber-Domoticz" externallink="https://tibber.com/se/invite/8af85f51">
     <description>
         <h2>Tibber API is used to fetch data from Tibber.com</h2><br/>
         <h2>Support me with a coffee &<a href="https://www.buymeacoffee.com/flopp999">https://www.buymeacoffee.com/flopp999</a></h2><br/>
@@ -335,7 +335,7 @@ class BasePlugin:
             WriteDebug("onHeartbeatLivePowerEvery")
             async def LivePowerEvery():
                 try:
-                    async with Client(transport=WebsocketsTransport(url="wss://api.tibber.com/v1-beta/gql/subscriptions", init_payload={"token": self.AccessToken}, headers={"User-Agent": "user_agent"}, ping_interval=10 ) ) as session:
+                    async with Client(transport=WebsocketsTransport(url="wss://websocket-api.tibber.com/v1-beta/gql/subscriptions", init_payload={"token": self.AccessToken}, headers={"User-Agent": "user_agent"}, ping_interval=10 ) ) as session:
                         query = gql("subscription{liveMeasurement(homeId:\"" + self.HomeID + "\"){power, powerProduction, voltagePhase1, voltagePhase2, voltagePhase3, currentL1, currentL2, currentL3}}")
                         result = await session.execute(query)
                         for name,value in result["liveMeasurement"].items():
@@ -353,9 +353,8 @@ class BasePlugin:
         if self.Count == 5 and self.RealTime is True and self.AllSettings is True:
             WriteDebug("onHeartbeatLivePower")
             async def LivePower():
-                transport = WebsocketsTransport(url='wss://websocket-api.tibber.com/v1-beta/gql/subscriptions', headers={'Authorization': self.AccessToken})
                 try:
-                    async with Client(transport=WebsocketsTransport(url="wss://api.tibber.com/v1-beta/gql/subscriptions", init_payload={"token": self.AccessToken}, headers={"User-Agent": "user_agent"}, ping_interval=10 ) ) as session:
+                    async with Client(transport=WebsocketsTransport(url="wss://websocket-api.tibber.com/v1-beta/gql/subscriptions", init_payload={"token": self.AccessToken}, headers={"User-Agent": "user_agent"}, ping_interval=10 ) ) as session:
                         query = gql("subscription{liveMeasurement(homeId:\"" + self.HomeID + "\"){minPower, maxPower, powerReactive, powerProductionReactive, minPowerProduction, maxPowerProduction, lastMeterProduction, powerFactor, signalStrength}}")
                         result = await session.execute(query)
                         for name,value in result["liveMeasurement"].items():
@@ -374,9 +373,8 @@ class BasePlugin:
             WriteDebug("onHeartbeatLiveData")
 
             async def LiveData():
-                transport = WebsocketsTransport(url='wss://websocket-api.tibber.com/v1-beta/gql/subscriptions', headers={'Authorization': self.AccessToken})
                 try:
-                    async with Client(transport=WebsocketsTransport(url="wss://api.tibber.com/v1-beta/gql/subscriptions", init_payload={"token": self.AccessToken}, headers={"User-Agent": "user_agent"}, ping_interval=10 ) ) as session:
+                    async with Client(transport=WebsocketsTransport(url="wss://websocket-api.tibber.com/v1-beta/gql/subscriptions", init_payload={"token": self.AccessToken}, headers={"User-Agent": "user_agent"}, ping_interval=10 ) ) as session:
                         query = gql("subscription{liveMeasurement(homeId:\"" + self.HomeID + "\"){lastMeterConsumption, accumulatedConsumption, accumulatedProduction, accumulatedConsumptionLastHour, accumulatedProductionLastHour, accumulatedCost, accumulatedReward, averagePower}}")
                         result = await session.execute(query)
                         for name,value in result["liveMeasurement"].items():
