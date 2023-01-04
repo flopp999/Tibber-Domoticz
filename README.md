@@ -12,7 +12,17 @@ In domoticz/plugins run command "sudo git clone https://github.com/flopp999/Tibb
 Run "sudo pip3 install -r requirements.txt" to install all packages that this plugin needs  
 Restart Domoticz  
 Add Tibber from Hardware  
-Input your Token and HomeID, get it from here https://developer.tibber.com/  
+Input your Token and HomeID, get it by log in to this page https://developer.tibber.com/explorer
+Load personal token and paste below code click PLAY
+```
+{
+  viewer {
+    homes {
+      id
+    }
+  }
+}
+```
 
 ![](./tibber.png "Photo")
 
