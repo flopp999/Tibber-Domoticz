@@ -1,7 +1,7 @@
 Important, you must Allow new devices, in Domoticz, Setup-Settings-System-Hardware/Devices.
 
 Create a folder with a name that you like in "domoticz/plugins"  
-Put plugin.py, tibberprice.zip, requirements.txt in that folder  
+Put plugin.py, tibber.zip, requirements.txt in that folder  
 
 or
 
