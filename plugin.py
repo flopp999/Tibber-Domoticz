@@ -3,7 +3,7 @@
 # Author: flopp999
 #
 """
-<plugin key="Tibber" name="Tibber API 1.20" author="flopp999" version="1.20" wikilink="https://github.com/flopp999/Tibber-Domoticz" externallink="https://tibber.com/se/invite/8af85f51">
+<plugin key="Tibber" name="Tibber API 1.21" author="flopp999" version="1.21" wikilink="https://github.com/flopp999/Tibber-Domoticz" externallink="https://tibber.com/se/invite/8af85f51">
     <description>
         <h2>Tibber API is used to fetch data from Tibber.com</h2><br/>
         <h2>Support me with a coffee &<a href="https://www.buymeacoffee.com/flopp999">https://www.buymeacoffee.com/flopp999</a></h2><br/>
@@ -30,7 +30,7 @@
         <h3>Configuration</h3>
     </description>
     <params>
-        <param field="Mode1" label="Tibber Access Token" width="460px" required="true" default="476c477d8a039529478ebd690d35ddd80e3308ffc49b59c65b142321aee963a4"/>
+        <param field="Mode1" label="Tibber Access Token" width="460px" required="true" default="5K4MVS-OjfWhK_4yrjOlFe1F6kJXPVf7eQYggo8ebAE"/>
         <param field="Mode4" label="Home ID" width="350px" required="false" default="Copy from Domoticz Log or Tibber Develop webpage"/>
         <param field="Mode3" label="Transfer fee(öre)" width="50px" required="false" default="0"/>
         <param field="Mode2" label="Unit for devices" width="50px">
