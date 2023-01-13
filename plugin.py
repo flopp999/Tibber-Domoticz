@@ -335,7 +335,7 @@ class BasePlugin:
             WriteDebug("onHeartbeatLivePowerEvery")
             async def LivePowerEvery():
                 try:
-                    async with Client(transport=WebsocketsTransport(url="wss://websocket-api.tibber.com/v1-beta/gql/subscriptions", init_payload={"token": self.AccessToken}, headers={"User-Agent": "user_agent"}, ping_interval=10 ) ) as session:
+                    async with Client(transport=WebsocketsTransport(url="wss://websocket-api.tibber.com/v1-beta/gql/subscriptions", init_payload={"token": self.AccessToken}, headers={"User-Agent": "Domoticz/1.22"}, ping_interval=10 ) ) as session:
                         query = gql("subscription{liveMeasurement(homeId:\"" + self.HomeID + "\"){power, powerProduction, voltagePhase1, voltagePhase2, voltagePhase3, currentL1, currentL2, currentL3}}")
                         result = await session.execute(query)
                         for name,value in result["liveMeasurement"].items():
@@ -354,7 +354,7 @@ class BasePlugin:
             WriteDebug("onHeartbeatLivePower")
             async def LivePower():
                 try:
-                    async with Client(transport=WebsocketsTransport(url="wss://websocket-api.tibber.com/v1-beta/gql/subscriptions", init_payload={"token": self.AccessToken}, headers={"User-Agent": "user_agent"}, ping_interval=10 ) ) as session:
+                    async with Client(transport=WebsocketsTransport(url="wss://websocket-api.tibber.com/v1-beta/gql/subscriptions", init_payload={"token": self.AccessToken}, headers={"User-Agent": "Domoticz/1.22"}, ping_interval=10 ) ) as session:
                         query = gql("subscription{liveMeasurement(homeId:\"" + self.HomeID + "\"){minPower, maxPower, powerReactive, powerProductionReactive, minPowerProduction, maxPowerProduction, lastMeterProduction, powerFactor, signalStrength}}")
                         result = await session.execute(query)
                         for name,value in result["liveMeasurement"].items():
@@ -374,7 +374,7 @@ class BasePlugin:
 
             async def LiveData():
                 try:
-                    async with Client(transport=WebsocketsTransport(url="wss://websocket-api.tibber.com/v1-beta/gql/subscriptions", init_payload={"token": self.AccessToken}, headers={"User-Agent": "user_agent"}, ping_interval=10 ) ) as session:
+                    async with Client(transport=WebsocketsTransport(url="wss://websocket-api.tibber.com/v1-beta/gql/subscriptions", init_payload={"token": self.AccessToken}, headers={"User-Agent": "Domoticz/1.22"}, ping_interval=10 ) ) as session:
                         query = gql("subscription{liveMeasurement(homeId:\"" + self.HomeID + "\"){lastMeterConsumption, accumulatedConsumption, accumulatedProduction, accumulatedConsumptionLastHour, accumulatedProductionLastHour, accumulatedCost, accumulatedReward, averagePower}}")
                         result = await session.execute(query)
                         for name,value in result["liveMeasurement"].items():
